@@ -23,6 +23,7 @@ mcp <- function(name = NULL, version = NULL) {
 #' R6 class representing a Model Context Protocol server. This class
 #' manages tools, resources, prompts, and handles the protocol communication.
 #'
+#' @importFrom R6 R6Class
 #' @export
 MCPServer <- R6::R6Class(
   "MCPServer",
@@ -133,9 +134,14 @@ MCPServer <- R6::R6Class(
         stop("Source file does not exist: ", file)
       }
       
-      # This will be implemented when we have the decorator parser
-      # For now, just source the file
-      source(file, local = TRUE)
+      # Parse decorators from the file
+      elements <- parse_mcp_decorators(file)
+      
+      # Create a new environment for the functions
+      source_env <- new.env(parent = globalenv())
+      
+      # Register all decorated elements
+      register_decorated_elements(self, elements, env = source_env)
       
       invisible(self)
     },

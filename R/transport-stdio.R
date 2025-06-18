@@ -4,6 +4,8 @@
 #' Implements stdio transport for MCP communication, reading from stdin
 #' and writing to stdout.
 #'
+#' @importFrom R6 R6Class
+#' @importFrom jsonlite fromJSON
 #' @export
 StdioTransport <- R6::R6Class(
   "StdioTransport",

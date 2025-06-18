@@ -17,6 +17,8 @@ Imports:
     tools,
     methods,
     utils
+    grDevices,
+    stats
 Suggests: 
     testthat (>= 3.0.0),
     withr (>= 2.5.0),
@@ -25,6 +27,7 @@ Suggests:
     yaml,
     knitr,
     rmarkdown
+    ggplot2
 Config/testthat/edition: 3
 Encoding: UTF-8
 Roxygen: list(markdown = TRUE)

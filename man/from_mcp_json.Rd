@@ -13,9 +13,37 @@ from_mcp_json(json)
 An R object reconstructed from the JSON data
 }
 \description{
-Convert JSON data back to R objects
+Reconstructs R objects from JSON data that was created with \code{to_mcp_json}.
+Preserves type information including dates, factors, matrices, and other
+special R types.
+}
+\details{
+This function reverses the conversion done by \code{to_mcp_json}, reconstructing:
+\itemize{
+\item Special numeric values (Inf, -Inf, NaN)
+\item Date and POSIXct objects with timezones
+\item Factors with original levels
+\item Matrices and arrays with dimensions
+\item Data frames
+\item S3 objects with class information
+\item Complex numbers
+\item Raw vectors from base64
+\item Formulas and language objects
+}
+
+Note: Environments cannot be reconstructed and are replaced with marker objects.
 }
 \examples{
+# Simple JSON string
 json_str <- '{"a": 1, "b": ["hello", "world"]}'
 from_mcp_json(json_str)
+
+# Round-trip conversion
+original <- list(
+  date = Sys.Date(),
+  values = c(1, 2, Inf),
+  factor = factor(c("a", "b", "a"))
+)
+json <- mcp_serialize(original)
+reconstructed <- from_mcp_json(json)
 }

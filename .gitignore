@@ -44,3 +44,4 @@ interactive-test.R
 *~
 *.swp
 *.swo
+mcpr.Rcheck/
