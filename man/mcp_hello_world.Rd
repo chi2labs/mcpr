@@ -28,7 +28,7 @@ mcp_hello_world()
 #   "mcpServers": {
 #     "r-hello": {
 #       "command": "R",
-#       "args": ["-e", "mcpr::mcp_hello_world()"]
+#       "args": ["--quiet", "--slave", "-e", "mcpr::mcp_hello_world()"]
 #     }
 #   }
 # }
