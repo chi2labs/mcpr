@@ -23,6 +23,7 @@ mcp <- function(name = NULL, version = NULL) {
 #' R6 class representing a Model Context Protocol server. This class
 #' manages tools, resources, prompts, and handles the protocol communication.
 #'
+#' @importFrom R6 R6Class
 #' @export
 MCPServer <- R6::R6Class(
   "MCPServer",
