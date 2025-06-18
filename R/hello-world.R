@@ -7,6 +7,7 @@
 #'   Currently only "stdio" is supported.
 #' @return Invisible NULL. The function starts the server which runs 
 #'   until interrupted.
+#' @importFrom utils packageVersion
 #' @export
 #' @examples
 #' \dontrun{

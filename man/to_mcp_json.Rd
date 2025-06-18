@@ -4,20 +4,64 @@
 \alias{to_mcp_json}
 \title{Convert R objects to JSON-compatible format for MCP}
 \usage{
-to_mcp_json(x, auto_unbox = TRUE)
+to_mcp_json(
+  x,
+  auto_unbox = TRUE,
+  size_limit = 1e+06,
+  custom_serializers = list()
+)
 }
 \arguments{
 \item{x}{An R object to convert}
 
 \item{auto_unbox}{Whether to automatically unbox single-element vectors}
+
+\item{size_limit}{Maximum object size in bytes before using large object handling (default: 1MB)}
+
+\item{custom_serializers}{List of custom serializers for specific classes}
 }
 \value{
 A JSON-compatible representation of the R object
 }
 \description{
-Convert R objects to JSON-compatible format for MCP
+Converts various R objects to a JSON-compatible format, preserving type
+information where possible. Handles special types like dates, factors,
+matrices, and special numeric values (Inf, -Inf, NaN).
+}
+\details{
+The function handles the following R types:
+\itemize{
+\item Basic types: NULL, logical, numeric, character, integer
+\item Special numeric values: Inf, -Inf, NaN
+\item Date/time types: Date, POSIXct, POSIXlt
+\item Complex numbers
+\item Raw vectors (binary data)
+\item Factors (with levels preserved)
+\item Matrices and arrays (with dimensions)
+\item Data frames
+\item Lists (recursive conversion)
+\item S3 and S4 objects
+\item Formulas and language objects
+\item Environments (replaced with markers)
+}
 }
 \examples{
+# Basic types
 to_mcp_json(list(a = 1, b = "hello"))
+to_mcp_json(c(TRUE, FALSE, NA))
+
+# Special numeric values
+to_mcp_json(c(1, Inf, -Inf, NaN))
+
+# Dates and times
+to_mcp_json(Sys.Date())
+to_mcp_json(Sys.time())
+
+# Data frames
 to_mcp_json(data.frame(x = 1:3, y = letters[1:3]))
+
+# Complex types
+to_mcp_json(matrix(1:6, nrow = 2))
+to_mcp_json(factor(c("a", "b", "a")))
+to_mcp_json(3 + 4i)
 }
