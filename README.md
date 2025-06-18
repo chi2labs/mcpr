@@ -44,9 +44,84 @@ server$mcp_resource(
 server$mcp_run(transport = "stdio")
 ```
 
+## Generating Standalone MCP Servers
+
+Due to R's stdin handling limitations in subprocess contexts, mcpr provides Node.js wrapper templates that ensure reliable communication with MCP clients like Claude Desktop.
+
+### Quick Server Generation
+
+Generate a complete MCP server package with Node.js wrapper:
+
+```r
+# Generate a simple server
+generate_mcp_server(
+  name = "my-tools",
+  title = "My R Tools", 
+  description = "Useful R tools for data analysis",
+  tools = list(
+    analyze = list(
+      description = "Analyze a dataset",
+      parameters = list(
+        data = list(type = "object", description = "Data to analyze")
+      )
+    )
+  )
+)
+```
+
+This creates a complete server in `./mcp-my-tools/` with:
+- `wrapper.js` - Node.js wrapper that handles stdin/stdout properly
+- `server.R` - R server implementation
+- `package.json` - NPM package configuration
+- Test and documentation files
+
+### Using the Generated Server
+
+```bash
+cd mcp-my-tools
+npm install
+npm test
+
+# Add to Claude Desktop config:
+# {
+#   "mcpServers": {
+#     "my-tools": {
+#       "command": "node",
+#       "args": ["/path/to/mcp-my-tools/wrapper.js"]
+#     }
+#   }
+# }
+```
+
+### Generating from Existing Server Objects
+
+```r
+# Create and configure a server
+server <- mcp(name = "Stats Server", version = "1.0.0")
+server$mcp_tool(name = "t_test", fn = t.test, description = "Perform t-test")
+server$mcp_tool(name = "cor_test", fn = cor.test, description = "Correlation test")
+
+# Generate standalone package
+server$generate(path = "./servers")
+```
+
+### Configuration Files
+
+Create servers from YAML or JSON configuration:
+
+```r
+# Create example configuration
+create_example_config("server-config.yaml")
+
+# Generate from configuration
+generate_from_config("server-config.yaml")
+```
+
+See `vignette("creating-servers")` for detailed documentation on server generation.
+
 ## Current Implementation Status
 
-✅ **Completed (Phase 1)**:
+✅ **Completed**:
 - Type conversion system (R ↔ JSON) with comprehensive support for:
   - Atomic types (numeric, character, logical)
   - Vectors and matrices
@@ -57,7 +132,9 @@ server$mcp_run(transport = "stdio")
 - Tool, resource, and prompt registration
 - stdio transport implementation
 - JSON-RPC 2.0 protocol handling
-- Comprehensive test suite for type conversion
+- Node.js wrapper template generation
+- Server package generation from code or configuration
+- Comprehensive test suite
 
 🚧 **In Progress**:
 - Decorator system for function annotations

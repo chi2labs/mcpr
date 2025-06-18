@@ -8,6 +8,7 @@
 # Build artifacts
 *.tar.gz
 *.zip
+*.Rcheck/
 
 # Documentation
 /Meta/

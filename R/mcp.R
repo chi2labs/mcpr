@@ -232,6 +232,62 @@ MCPServer <- R6::R6Class(
     },
     
     #' @description
+    #' Generate a standalone MCP server package
+    #' @param path Directory to create the server in
+    #' @param template Template to use ("full" or "minimal")
+    #' @param overwrite Whether to overwrite existing directory
+    #' @return Path to generated server directory
+    generate = function(path = ".", template = "full", overwrite = FALSE) {
+      # Convert tools, resources, and prompts to configuration format
+      tools_config <- NULL
+      if (length(self$tools) > 0) {
+        tools_config <- lapply(self$tools, function(tool) {
+          list(
+            description = tool$description,
+            parameters = tool$parameters$properties
+          )
+        })
+        names(tools_config) <- names(self$tools)
+      }
+      
+      resources_config <- NULL
+      if (length(self$resources) > 0) {
+        resources_config <- lapply(seq_along(self$resources), function(i) {
+          res <- self$resources[[i]]
+          list(
+            uri = paste0("resource://", res$name),
+            name = res$name,
+            description = res$description
+          )
+        })
+      }
+      
+      prompts_config <- NULL
+      if (length(self$prompts) > 0) {
+        prompts_config <- lapply(self$prompts, function(prompt) {
+          list(
+            description = prompt$description
+          )
+        })
+        names(prompts_config) <- names(self$prompts)
+      }
+      
+      # Generate the server package
+      generate_mcp_server(
+        name = gsub("[^a-z0-9-]", "-", tolower(self$name)),
+        title = self$name,
+        description = paste("MCP server:", self$name),
+        version = self$version,
+        path = path,
+        tools = tools_config,
+        resources = resources_config,
+        prompts = prompts_config,
+        template = template,
+        overwrite = overwrite
+      )
+    },
+    
+    #' @description
     #' Get server capabilities for initialization
     #' @return List of server capabilities
     get_capabilities = function() {
@@ -378,7 +434,18 @@ print.MCPServer <- function(x, ...) {
   x$print(...)
 }
 
-# Helper function for NULL default values
+#' NULL coalescing operator
+#'
+#' Returns the left-hand side if it is not NULL, otherwise returns the right-hand side.
+#'
+#' @param x Left-hand side value
+#' @param y Right-hand side value (default)
+#' @return \code{x} if not NULL, otherwise \code{y}
+#' @name grapes-or-or-grapes
+#' @keywords internal
+#' @examples
+#' NULL %||% "default"  # returns "default"
+#' "value" %||% "default"  # returns "value"
 `%||%` <- function(x, y) {
   if (is.null(x)) y else x
 }

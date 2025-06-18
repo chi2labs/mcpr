@@ -1,0 +1,347 @@
+---
+title: "Creating MCP Servers with mcpr"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Creating MCP Servers with mcpr}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>"
+)
+```
+
+## Introduction
+
+The Model Context Protocol (MCP) allows Large Language Models like Claude to interact with external tools and data sources. However, R's stdin handling in subprocess contexts requires special handling. The `mcpr` package solves this by providing Node.js wrapper templates that properly manage communication between MCP clients and R servers.
+
+## Quick Start
+
+### Generating a Simple Server
+
+```r
+library(mcpr)
+
+# Generate a basic MCP server
+generate_mcp_server(
+  name = "hello-world",
+  title = "Hello World Server",
+  description = "A simple MCP server that greets users"
+)
+```
+
+This creates a complete server package in `./mcp-hello-world/` with:
+- `wrapper.js` - Node.js wrapper that handles stdin/stdout
+- `server.R` - R server implementation
+- `package.json` - NPM package configuration
+- `test.js` - Test script to validate the server
+- `README.md` - Documentation
+
+### Testing Your Server
+
+```bash
+cd mcp-hello-world
+npm install
+npm test
+```
+
+### Adding to Claude Desktop
+
+Add to your Claude Desktop configuration:
+
+```json
+{
+  "mcpServers": {
+    "hello-world": {
+      "command": "node",
+      "args": ["/path/to/mcp-hello-world/wrapper.js"]
+    }
+  }
+}
+```
+
+## Creating Servers with Tools
+
+### Basic Example
+
+```r
+# Define tools
+tools <- list(
+  greet = list(
+    description = "Greet a person by name",
+    parameters = list(
+      name = list(type = "string", description = "Name to greet")
+    )
+  ),
+  calculate = list(
+    description = "Evaluate an R expression",
+    parameters = list(
+      expression = list(type = "string", description = "R expression to evaluate")
+    )
+  )
+)
+
+# Generate server with tools
+generate_mcp_server(
+  name = "my-tools",
+  title = "My R Tools",
+  description = "Useful R tools for data analysis",
+  tools = tools
+)
+```
+
+### Using the Programmatic API
+
+```r
+# Create server programmatically
+server <- mcp(name = "Data Analyzer", version = "1.0.0")
+
+# Add tools
+server$mcp_tool(
+  name = "summarize",
+  fn = function(data) {
+    summary(data)
+  },
+  description = "Summarize a dataset"
+)
+
+server$mcp_tool(
+  name = "correlation",
+  fn = function(x, y) {
+    cor(x, y)
+  },
+  description = "Calculate correlation"
+)
+
+# Generate standalone package
+server$generate(path = "./servers", template = "full")
+```
+
+## Working with Resources
+
+Resources provide read-only access to data:
+
+```r
+resources <- list(
+  list(
+    uri = "data://iris",
+    name = "Iris Dataset",
+    description = "Classic iris dataset"
+  ),
+  list(
+    uri = "info://system",
+    name = "System Information",
+    description = "R system information"
+  )
+)
+
+generate_mcp_server(
+  name = "data-provider",
+  title = "Data Provider",
+  description = "Provides access to datasets",
+  resources = resources
+)
+```
+
+## Using Configuration Files
+
+### YAML Configuration
+
+Create `server-config.yaml`:
+
+```yaml
+name: analysis-server
+title: Statistical Analysis Server
+description: Comprehensive statistical analysis tools
+version: 1.0.0
+author: Your Name
+
+tools:
+  t_test:
+    description: Perform t-test
+    parameters:
+      x:
+        type: array
+        description: First sample
+      y:
+        type: array
+        description: Second sample
+      
+  regression:
+    description: Linear regression
+    parameters:
+      formula:
+        type: string
+        description: Model formula
+      data:
+        type: object
+        description: Data frame
+        
+resources:
+  - uri: "data://example"
+    name: "Example Data"
+    description: "Sample datasets"
+```
+
+Generate from configuration:
+
+```r
+generate_from_config("server-config.yaml")
+```
+
+### JSON Configuration
+
+```r
+# Create example configuration
+create_example_config("server-config.json", format = "json")
+
+# Generate from JSON
+generate_from_config("server-config.json")
+```
+
+## Templates
+
+### Full Template
+
+The default "full" template includes:
+- Complete MCP protocol implementation
+- Support for tools, resources, and prompts
+- Comprehensive error handling
+- Detailed comments and documentation
+
+### Minimal Template
+
+For simple use cases:
+
+```r
+generate_mcp_server(
+  name = "simple",
+  title = "Simple Server",
+  description = "Minimal MCP server",
+  template = "minimal"
+)
+```
+
+## Advanced Usage
+
+### Exposing R Packages
+
+```r
+server <- mcp(name = "Stats Server", version = "1.0.0")
+
+# Expose specific functions from stats package
+server$mcp_package(
+  package = "stats",
+  include = c("lm", "glm", "t.test", "cor.test")
+)
+
+# Generate server
+server$generate()
+```
+
+### Custom Wrapper Configuration
+
+The Node.js wrapper filters stderr to prevent R output from breaking the MCP connection. You can customize the filtering:
+
+```javascript
+// In wrapper.js
+const filterPatterns = [
+  /^Attaching package:/,
+  /^The following objects are masked/,
+  /^Loading required package:/,
+  // Add custom patterns
+];
+```
+
+## Troubleshooting
+
+### Common Issues
+
+1. **Server doesn't connect**: Ensure no stderr output from R
+2. **Tools not working**: Check parameter definitions match function signature
+3. **Resources empty**: Verify resource functions return proper content
+
+### Debug Mode
+
+Enable debug logging:
+
+```bash
+DEBUG=1 node wrapper.js
+```
+
+This writes debug information to `mcp-debug.log`.
+
+## Best Practices
+
+1. **Always use the Node.js wrapper** - Direct R execution won't work with Claude Desktop
+2. **Keep stderr clean** - Use `suppressMessages()` and `suppressWarnings()` in your R code
+3. **Test thoroughly** - Use the included test script before deployment
+4. **Document your tools** - Provide clear descriptions for better LLM understanding
+
+## Example: Complete Data Analysis Server
+
+```r
+# Create a comprehensive data analysis server
+tools <- list(
+  read_csv = list(
+    description = "Read CSV file",
+    parameters = list(
+      path = list(type = "string", description = "File path")
+    )
+  ),
+  
+  summarize = list(
+    description = "Generate summary statistics",
+    parameters = list(
+      data = list(type = "object", description = "Data frame")
+    )
+  ),
+  
+  plot_histogram = list(
+    description = "Create histogram",
+    parameters = list(
+      data = list(type = "array", description = "Numeric data"),
+      bins = list(type = "number", description = "Number of bins")
+    )
+  ),
+  
+  linear_model = list(
+    description = "Fit linear model",
+    parameters = list(
+      formula = list(type = "string", description = "Model formula"),
+      data = list(type = "object", description = "Data frame")
+    )
+  )
+)
+
+resources <- list(
+  list(
+    uri = "data://sample",
+    name = "Sample Datasets",
+    description = "Built-in R datasets"
+  )
+)
+
+prompts <- list(
+  analyze = list(
+    description = "Analyze a dataset comprehensively"
+  )
+)
+
+generate_mcp_server(
+  name = "data-analysis",
+  title = "R Data Analysis Server",
+  description = "Complete data analysis toolkit",
+  tools = tools,
+  resources = resources,
+  prompts = prompts,
+  author = "Data Science Team"
+)
+```
+
+## Conclusion
+
+The `mcpr` package makes it easy to create MCP servers that expose R functionality to LLMs. The Node.js wrapper ensures reliable communication, while the template system provides flexibility for different use cases.
