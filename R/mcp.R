@@ -133,9 +133,14 @@ MCPServer <- R6::R6Class(
         stop("Source file does not exist: ", file)
       }
       
-      # This will be implemented when we have the decorator parser
-      # For now, just source the file
-      source(file, local = TRUE)
+      # Parse decorators from the file
+      elements <- parse_mcp_decorators(file)
+      
+      # Create a new environment for the functions
+      source_env <- new.env(parent = globalenv())
+      
+      # Register all decorated elements
+      register_decorated_elements(self, elements, env = source_env)
       
       invisible(self)
     },
