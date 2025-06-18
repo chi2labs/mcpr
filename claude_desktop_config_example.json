@@ -1,8 +1,12 @@
 {
   "mcpServers": {
+    "r-hello": {
+      "command": "R",
+      "args": ["--quiet", "--slave", "-e", "mcpr::mcp_hello_world()"]
+    },
     "r-analysis": {
       "command": "Rscript",
-      "args": ["/Users/sasha/Desktop/mcpr/mcp-server.R"]
+      "args": ["--no-echo", "/Users/sasha/Desktop/mcpr/mcp-server.R"]
     }
   }
 }

@@ -1,14 +1,8 @@
 {
   "mcpServers": {
-    "r-simple": {
-      "command": "Rscript",
-      "args": ["/Users/sasha/Desktop/mcpr/simple-mcp-server.R"],
-      "env": {}
-    },
-    "r-analysis": {
-      "command": "Rscript",
-      "args": ["/Users/sasha/Desktop/mcpr/mcp-server.R"],
-      "env": {}
+    "r-hello": {
+      "command": "node",
+      "args": ["/Users/sasha/Desktop/mcpr/inst/bin/mcp-wrapper-clean.js"]
     }
   }
 }

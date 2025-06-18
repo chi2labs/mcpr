@@ -28,25 +28,65 @@ StdioTransport <- R6::R6Class(
       # Print initialization message
       cat("MCP Server started on stdio transport\n", file = stderr())
       
-      # Use file("stdin") for better compatibility
-      con <- file("stdin", "r")
-      on.exit(close(con))
+      # Debug: Check if we're in an interactive session
+      if (interactive()) {
+        cat("Warning: Running in interactive mode, stdin behavior may differ\n", file = stderr())
+      }
+      
+      # Use stdin() directly for better blocking behavior
+      # The file("stdin") approach might not block properly
       
       # Main message loop
       while (private$running) {
-        # Read a line from stdin
+        # Read a line from stdin - this should block until input is available
         line <- tryCatch({
-          # Try readLines with the connection
-          input <- readLines(con, n = 1, warn = FALSE)
-          if (length(input) > 0) input[1] else character(0)
+          # Use readLines with stdin() which should block
+          input <- readLines(stdin(), n = 1, warn = FALSE)
+          
+          # Debug log
+          if (getOption("mcpr.debug", FALSE)) {
+            cat("Read", length(input), "lines from stdin\n", file = stderr())
+            if (length(input) > 0) {
+              cat("Content: '", input[1], "'\n", file = stderr())
+            }
+          }
+          
+          # If we get input, return it
+          if (length(input) > 0 && nchar(input[1]) > 0) {
+            input[1]
+          } else if (length(input) == 0) {
+            # EOF reached
+            character(0)
+          } else {
+            # Empty line - continue
+            ""
+          }
         }, error = function(e) {
-          # If readLines fails, return empty
+          # Log error to stderr for debugging
+          cat("Error reading stdin: ", as.character(e), "\n", file = stderr())
           character(0)
         })
         
         # Check for EOF or empty input
         if (length(line) == 0 || identical(line, character(0))) {
-          break
+          # Don't break immediately - might just be a timing issue
+          # Try a few more times
+          if (!exists("empty_reads", private)) {
+            private$empty_reads <- 0
+          }
+          private$empty_reads <- private$empty_reads + 1
+          
+          if (private$empty_reads > 10) {
+            # Really looks like EOF
+            break
+          }
+          
+          # Wait a bit and continue
+          Sys.sleep(0.1)
+          next
+        } else {
+          # Reset counter on successful read
+          private$empty_reads <- 0
         }
         
         # Skip empty lines
@@ -96,6 +136,7 @@ StdioTransport <- R6::R6Class(
   
   private = list(
     running = FALSE,
+    empty_reads = 0,
     
     #' Handle incoming JSON-RPC message
     handle_message = function(message) {
