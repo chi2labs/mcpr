@@ -1,0 +1,8 @@
+{
+  "mcpServers": {
+    "r-analysis": {
+      "command": "Rscript",
+      "args": ["/Users/sasha/Desktop/mcpr/mcp-server.R"]
+    }
+  }
+}
