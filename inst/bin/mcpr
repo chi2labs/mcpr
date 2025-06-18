@@ -1,0 +1,148 @@
+#!/usr/bin/env Rscript
+
+# mcpr CLI - Command line interface for mcpr package
+
+suppressPackageStartupMessages({
+  library(mcpr)
+  library(optparse)
+})
+
+# Define command line options
+option_list <- list(
+  make_option(c("-n", "--name"), 
+              type = "character",
+              help = "Server name (required)",
+              metavar = "NAME"),
+  
+  make_option(c("-t", "--title"),
+              type = "character", 
+              help = "Server title (required)",
+              metavar = "TITLE"),
+  
+  make_option(c("-d", "--description"),
+              type = "character",
+              help = "Server description (required)", 
+              metavar = "DESC"),
+  
+  make_option(c("-v", "--version"),
+              type = "character",
+              default = "0.1.0",
+              help = "Server version [default: %default]",
+              metavar = "VERSION"),
+  
+  make_option(c("-p", "--path"),
+              type = "character",
+              default = ".",
+              help = "Output directory [default: %default]",
+              metavar = "PATH"),
+  
+  make_option(c("-T", "--template"),
+              type = "character",
+              default = "full",
+              help = "Template type: full or minimal [default: %default]",
+              metavar = "TEMPLATE"),
+  
+  make_option(c("-c", "--config"),
+              type = "character",
+              help = "Configuration file (YAML or JSON)",
+              metavar = "FILE"),
+  
+  make_option(c("-a", "--author"),
+              type = "character",
+              help = "Author name",
+              metavar = "AUTHOR"),
+  
+  make_option(c("-f", "--force"),
+              action = "store_true",
+              default = FALSE,
+              help = "Overwrite existing directory"),
+  
+  make_option(c("-e", "--example"),
+              action = "store_true",
+              default = FALSE,
+              help = "Create example configuration file")
+)
+
+# Parse arguments
+parser <- OptionParser(
+  usage = "%prog [options]",
+  description = "\nmcpr - Model Context Protocol server generator for R\n\nExamples:\n  %prog -n my-server -t \"My Server\" -d \"Server description\"\n  %prog -c server-config.yaml\n  %prog --example",
+  option_list = option_list
+)
+
+args <- parse_args(parser)
+
+# Handle example config generation
+if (args$example) {
+  filename <- "mcpr-config.yaml"
+  create_example_config(filename)
+  cat("✅ Created example configuration:", filename, "\n")
+  cat("Edit this file and run: mcpr -c", filename, "\n")
+  quit(save = "no", status = 0)
+}
+
+# Handle config file
+if (!is.null(args$config)) {
+  tryCatch({
+    server_dir <- generate_from_config(
+      args$config,
+      path = args$path,
+      overwrite = args$force
+    )
+    
+    cat("\n📁 Next steps:\n")
+    cat("cd", server_dir, "\n")
+    cat("npm install\n")
+    cat("npm test\n")
+    
+  }, error = function(e) {
+    cat("❌ Error:", e$message, "\n")
+    quit(save = "no", status = 1)
+  })
+  
+  quit(save = "no", status = 0)
+}
+
+# Validate required arguments for direct generation
+if (is.null(args$name)) {
+  cat("❌ Error: Server name is required (use -n or --name)\n")
+  print_help(parser)
+  quit(save = "no", status = 1)
+}
+
+if (is.null(args$title)) {
+  cat("❌ Error: Server title is required (use -t or --title)\n")
+  print_help(parser)
+  quit(save = "no", status = 1)
+}
+
+if (is.null(args$description)) {
+  cat("❌ Error: Server description is required (use -d or --description)\n")
+  print_help(parser)
+  quit(save = "no", status = 1)
+}
+
+# Generate server
+tryCatch({
+  server_dir <- generate_mcp_server(
+    name = args$name,
+    title = args$title,
+    description = args$description,
+    version = args$version,
+    path = args$path,
+    template = args$template,
+    author = args$author,
+    overwrite = args$force
+  )
+  
+  cat("\n📁 Next steps:\n")
+  cat("cd", server_dir, "\n")
+  cat("npm install\n")
+  cat("npm test\n")
+  
+}, error = function(e) {
+  cat("❌ Error:", e$message, "\n")
+  quit(save = "no", status = 1)
+})
+
+quit(save = "no", status = 0)

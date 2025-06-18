@@ -32,6 +32,7 @@ manages tools, resources, prompts, and handles the protocol communication.
 \item \href{#method-MCPServer-mcp_source}{\code{MCPServer$mcp_source()}}
 \item \href{#method-MCPServer-mcp_package}{\code{MCPServer$mcp_package()}}
 \item \href{#method-MCPServer-mcp_run}{\code{MCPServer$mcp_run()}}
+\item \href{#method-MCPServer-generate}{\code{MCPServer$generate()}}
 \item \href{#method-MCPServer-get_capabilities}{\code{MCPServer$get_capabilities()}}
 \item \href{#method-MCPServer-execute_tool}{\code{MCPServer$execute_tool()}}
 \item \href{#method-MCPServer-get_resource}{\code{MCPServer$get_resource()}}
@@ -202,6 +203,30 @@ Run the MCP server
 }
 \subsection{Returns}{
 Server handle (transport-specific)
+}
+}
+\if{html}{\out{<hr>}}
+\if{html}{\out{<a id="method-MCPServer-generate"></a>}}
+\if{latex}{\out{\hypertarget{method-MCPServer-generate}{}}}
+\subsection{Method \code{generate()}}{
+Generate a standalone MCP server package
+\subsection{Usage}{
+\if{html}{\out{<div class="r">}}\preformatted{MCPServer$generate(path = ".", template = "full", overwrite = FALSE)}\if{html}{\out{</div>}}
+}
+
+\subsection{Arguments}{
+\if{html}{\out{<div class="arguments">}}
+\describe{
+\item{\code{path}}{Directory to create the server in}
+
+\item{\code{template}}{Template to use ("full" or "minimal")}
+
+\item{\code{overwrite}}{Whether to overwrite existing directory}
+}
+\if{html}{\out{</div>}}
+}
+\subsection{Returns}{
+Path to generated server directory
 }
 }
 \if{html}{\out{<hr>}}
