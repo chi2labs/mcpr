@@ -1,0 +1,9 @@
+{
+  "mcpServers": {
+    "{{SERVER_ID}}": {
+      "command": "node",
+      "args": ["{{FULL_PATH}}/index.js"],
+      "env": {}
+    }
+  }
+}

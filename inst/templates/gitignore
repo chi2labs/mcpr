@@ -1,0 +1,31 @@
+# Node modules
+node_modules/
+npm-debug.log*
+
+# R related
+.Rhistory
+.RData
+.Rproj.user/
+*.Rproj
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Test output
+test-results/
+coverage/
+
+# Temporary files
+*.tmp
+*.temp
+*.log
+
+# MCP specific
+mcp-debug.log
