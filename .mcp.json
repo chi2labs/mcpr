@@ -1,8 +1,0 @@
-{
-  "mcpServers": {
-    "r-hello": {
-      "command": "node",
-      "args": ["/Users/sasha/Desktop/mcpr/inst/bin/mcp-wrapper-clean.js"]
-    }
-  }
-}

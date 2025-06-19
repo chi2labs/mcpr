@@ -202,27 +202,22 @@ MCPServer <- R6::R6Class(
     
     #' @description
     #' Run the MCP server
-    #' @param transport Transport type ("stdio", "http", "websocket")
+    #' @param transport Transport type ("http", "websocket")
     #' @param host Host address for HTTP/WebSocket transport
     #' @param port Port number for HTTP/WebSocket transport
     #' @return Server handle (transport-specific)
-    mcp_run = function(transport = "stdio", host = "127.0.0.1", port = NULL) {
+    mcp_run = function(transport = "http", host = "127.0.0.1", port = NULL) {
       # Validate transport
-      if (!transport %in% c("stdio", "http", "websocket")) {
-        stop("Invalid transport: ", transport, ". Must be one of: stdio, http, websocket")
+      if (!transport %in% c("http", "websocket")) {
+        stop("Invalid transport: ", transport, ". Must be one of: http, websocket")
       }
       
       # Create appropriate transport
-      if (transport == "stdio") {
-        if (!requireNamespace("processx", quietly = TRUE)) {
-          stop("Package 'processx' is required for stdio transport")
+      if (transport == "http") {
+        if (!requireNamespace("plumber", quietly = TRUE)) {
+          stop("Package 'plumber' is required for HTTP transport")
         }
-        private$transport <- StdioTransport$new(self)
-      } else if (transport == "http") {
-        if (!requireNamespace("httpuv", quietly = TRUE)) {
-          stop("Package 'httpuv' is required for HTTP transport")
-        }
-        stop("HTTP transport not yet implemented")
+        private$transport <- HttpTransport$new(self, host = host, port = port %||% 8080)
       } else if (transport == "websocket") {
         stop("WebSocket transport not yet implemented")
       }
@@ -396,12 +391,12 @@ MCPServer <- R6::R6Class(
       args <- formals(fn)
       
       if (length(args) == 0) {
-        return(list(type = "object", properties = list()))
+        return(list(type = "object", properties = list(), required = I(list())))
       }
       
       # Build parameter schema
       properties <- list()
-      required <- character()
+      required <- list()
       
       for (i in seq_along(args)) {
         arg_name <- names(args)[i]
@@ -420,11 +415,13 @@ MCPServer <- R6::R6Class(
         )
       }
       
-      list(
+      schema <- list(
         type = "object",
         properties = properties,
-        required = if (length(required) > 0) required else NULL
+        required = if (length(required) > 0) as.list(required) else I(list())
       )
+      
+      schema
     }
   )
 )

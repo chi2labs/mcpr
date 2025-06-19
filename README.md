@@ -42,6 +42,9 @@ server$mcp_resource(
 
 # Run the server on stdio (for Claude Desktop)
 server$mcp_run(transport = "stdio")
+
+# Or run with HTTP transport (new!)
+server$mcp_run(transport = "http", port = 8080)
 ```
 
 ## Generating Standalone MCP Servers
@@ -86,8 +89,7 @@ npm test
 # {
 #   "mcpServers": {
 #     "my-tools": {
-#       "command": "node",
-#       "args": ["/path/to/mcp-my-tools/wrapper.js"]
+#       "url": "http://localhost:8080/mcp"
 #     }
 #   }
 # }
@@ -119,6 +121,49 @@ generate_from_config("server-config.yaml")
 
 See `vignette("creating-servers")` for detailed documentation on server generation.
 
+## HTTP Transport (New!)
+
+mcpr now supports HTTP transport as an alternative to stdio, offering several advantages:
+
+```r
+# Create an HTTP server
+server <- mcp_http(
+  name = "My HTTP API",
+  version = "1.0.0",
+  port = 8080
+)
+
+# Add tools as usual
+server$mcp_tool(
+  name = "analyze",
+  fn = function(data) summary(as.numeric(strsplit(data, ",")[[1]])),
+  description = "Analyze comma-separated numbers"
+)
+
+# Start the server
+server$mcp_run()  # Automatically uses HTTP
+```
+
+### Quick Start with HTTP
+
+```r
+# Start a hello world HTTP server
+mcp_hello_world_http(port = 8080)
+
+# Test with curl:
+# curl -X POST http://localhost:8080/mcp \
+#   -H "Content-Type: application/json" \
+#   -d '{"jsonrpc":"2.0","method":"tools/list","id":1}'
+```
+
+### HTTP Features
+
+- **Multiple clients**: Handle concurrent connections
+- **Standard debugging**: Use curl, Postman, or browser tools
+- **Easy deployment**: Deploy to cloud platforms or containers
+- **Built-in logging**: Track requests and errors
+- **No subprocess issues**: Avoids R's stdin limitations
+
 ## Current Implementation Status
 
 ✅ **Completed**:
@@ -131,14 +176,16 @@ See `vignette("creating-servers")` for detailed documentation on server generati
 - Basic MCP server object with builder pattern
 - Tool, resource, and prompt registration
 - stdio transport implementation
+- HTTP transport with plumber integration
 - JSON-RPC 2.0 protocol handling
 - Node.js wrapper template generation
 - Server package generation from code or configuration
 - Comprehensive test suite
+- Logging and error handling for HTTP servers
 
 🚧 **In Progress**:
 - Decorator system for function annotations
-- HTTP and WebSocket transports
+- WebSocket transport
 - Package scanning functionality
 
 📋 **Planned**:
