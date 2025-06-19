@@ -55,6 +55,9 @@ Start the stdio transport
 \if{latex}{\out{\hypertarget{method-StdioTransport-stop}{}}}
 \subsection{Method \code{stop()}}{
 Stop the transport
+Run with enhanced protocol
+Run in legacy mode
+Create protocol handlers for this server
 Handle incoming JSON-RPC message
 Handle initialize request
 Handle tools/list request

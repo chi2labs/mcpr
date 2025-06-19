@@ -3,12 +3,29 @@
   "version": "{{SERVER_VERSION}}",
   "description": "{{SERVER_DESCRIPTION}}",
   "main": "wrapper.js",
+  "bin": {
+    "mcp-{{SERVER_NAME}}": "./wrapper.js"
+  },
   "scripts": {
     "start": "node wrapper.js",
-    "test": "node test.js"
+    "test": "node test.js",
+    "debug": "MCPR_DEBUG=true node wrapper.js",
+    "install-global": "npm install -g .",
+    "uninstall-global": "npm uninstall -g mcp-{{SERVER_NAME}}"
   },
-  "keywords": ["mcp", "model-context-protocol", "r"],
-  "author": "",
+  "keywords": ["mcp", "model-context-protocol", "r", "{{SERVER_NAME}}"],
+  "author": "{{AUTHOR_NAME}}",
   "license": "MIT",
-  "dependencies": {}
+  "dependencies": {},
+  "engines": {
+    "node": ">=16.0.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/chi2labs/mcpr"
+  },
+  "mcp": {
+    "serverName": "{{SERVER_NAME}}",
+    "protocol": "stdio"
+  }
 }

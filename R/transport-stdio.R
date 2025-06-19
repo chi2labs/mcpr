@@ -27,67 +27,75 @@ StdioTransport <- R6::R6Class(
     start = function() {
       private$running <- TRUE
       
-      # Print initialization message
-      cat("MCP Server started on stdio transport\n", file = stderr())
+      # Check if we should use the enhanced protocol
+      use_protocol <- Sys.getenv("MCPR_USE_PROTOCOL", "true") != "false"
       
-      # Debug: Check if we're in an interactive session
-      if (interactive()) {
-        cat("Warning: Running in interactive mode, stdin behavior may differ\n", file = stderr())
+      if (use_protocol) {
+        # Use the enhanced protocol mode
+        private$run_with_protocol()
+      } else {
+        # Use legacy mode for backward compatibility
+        private$run_legacy_mode()
       }
+    },
+    
+    #' @description
+    #' Stop the transport
+    stop = function() {
+      private$running <- FALSE
+    }
+  ),
+  
+  private = list(
+    running = FALSE,
+    empty_reads = 0,
+    
+    #' Run with enhanced protocol
+    run_with_protocol = function() {
+      # Create protocol handlers
+      handlers <- private$create_protocol_handlers()
       
-      # Use stdin() directly for better blocking behavior
-      # The file("stdin") approach might not block properly
-      
-      # Main message loop
+      # Use the protocol communication loop
+      run_protocol_loop(
+        handlers = handlers,
+        on_ready = function() {
+          # Server is ready - don't output to stderr
+        }
+      )
+    },
+    
+    #' Run in legacy mode
+    run_legacy_mode = function() {
+      # Main message loop using original logic
       while (private$running) {
-        # Read a line from stdin - this should block until input is available
         line <- tryCatch({
-          # Use readLines with stdin() which should block
           input <- readLines(stdin(), n = 1, warn = FALSE)
           
-          # Debug log
-          if (getOption("mcpr.debug", FALSE)) {
-            cat("Read", length(input), "lines from stdin\n", file = stderr())
-            if (length(input) > 0) {
-              cat("Content: '", input[1], "'\n", file = stderr())
-            }
-          }
-          
-          # If we get input, return it
           if (length(input) > 0 && nchar(input[1]) > 0) {
             input[1]
           } else if (length(input) == 0) {
-            # EOF reached
             character(0)
           } else {
-            # Empty line - continue
             ""
           }
         }, error = function(e) {
-          # Log error to stderr for debugging
-          cat("Error reading stdin: ", as.character(e), "\n", file = stderr())
           character(0)
         })
         
         # Check for EOF or empty input
         if (length(line) == 0 || identical(line, character(0))) {
-          # Don't break immediately - might just be a timing issue
-          # Try a few more times
           if (!exists("empty_reads", private)) {
             private$empty_reads <- 0
           }
           private$empty_reads <- private$empty_reads + 1
           
           if (private$empty_reads > 10) {
-            # Really looks like EOF
             break
           }
           
-          # Wait a bit and continue
           Sys.sleep(0.1)
           next
         } else {
-          # Reset counter on successful read
           private$empty_reads <- 0
         }
         
@@ -98,20 +106,15 @@ StdioTransport <- R6::R6Class(
         
         # Process the message
         tryCatch({
-          # Parse JSON-RPC message
           message <- jsonlite::fromJSON(line, simplifyVector = FALSE)
-          
-          # Handle the message
           response <- private$handle_message(message)
           
-          # Send response if any
           if (!is.null(response)) {
             response_json <- mcp_serialize(response, pretty = FALSE)
             cat(response_json, "\n", sep = "")
             flush(stdout())
           }
         }, error = function(e) {
-          # Send error response
           error_response <- list(
             jsonrpc = "2.0",
             error = list(
@@ -125,20 +128,12 @@ StdioTransport <- R6::R6Class(
           flush(stdout())
         })
       }
-      
-      cat("MCP Server stopped\n", file = stderr())
     },
     
-    #' @description
-    #' Stop the transport
-    stop = function() {
-      private$running <- FALSE
-    }
-  ),
-  
-  private = list(
-    running = FALSE,
-    empty_reads = 0,
+    #' Create protocol handlers for this server
+    create_protocol_handlers = function() {
+      create_mcp_protocol_handlers(self$server)
+    },
     
     #' Handle incoming JSON-RPC message
     handle_message = function(message) {

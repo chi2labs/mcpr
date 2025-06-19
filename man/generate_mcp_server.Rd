@@ -15,6 +15,8 @@ generate_mcp_server(
   prompts = NULL,
   template = "full",
   author = NULL,
+  use_protocol = TRUE,
+  source_files = NULL,
   overwrite = FALSE
 )
 }
@@ -38,6 +40,10 @@ generate_mcp_server(
 \item{template}{Which template to use: "full" or "minimal" (default: "full")}
 
 \item{author}{Author name (optional)}
+
+\item{use_protocol}{Whether to use enhanced protocol (default: TRUE)}
+
+\item{source_files}{Original source files to copy (optional)}
 
 \item{overwrite}{Whether to overwrite existing directory (default: FALSE)}
 }

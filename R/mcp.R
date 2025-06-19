@@ -182,12 +182,12 @@ MCPServer <- R6::R6Class(
           tool_name <- paste0(package, "::", fn_name)
           
           # Try to get help documentation
-          help_file <- utils::help(fn_name, package = package)
-          description <- NULL
-          if (length(help_file) > 0) {
-            # Extract description from help (simplified for now)
-            description <- paste("Function", fn_name, "from package", package)
-          }
+          description <- tryCatch({
+            # Create a simple description for now
+            paste("Function", fn_name, "from package", package)
+          }, error = function(e) {
+            paste("Function", fn_name, "from package", package)
+          })
           
           self$mcp_tool(
             name = tool_name,

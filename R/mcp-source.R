@@ -14,7 +14,8 @@ NULL
 #' @param recursive Whether to scan subdirectories
 #' @return A list of files containing MCP decorators
 #' @export
-scan_mcp_directory <- function(path, pattern = "\\.R$", recursive = TRUE) {
+scan_mcp_directory <- function(path, pattern = "\\.R$", recursive = TRUE,
+                             include = NULL, exclude = NULL) {
   if (!dir.exists(path)) {
     stop("Directory does not exist: ", path)
   }
@@ -26,6 +27,29 @@ scan_mcp_directory <- function(path, pattern = "\\.R$", recursive = TRUE) {
     full.names = TRUE, 
     recursive = recursive
   )
+  
+  # Apply include/exclude filters if provided
+  if (!is.null(include) || !is.null(exclude)) {
+    file_basenames <- basename(r_files)
+    
+    # Apply include patterns
+    if (!is.null(include)) {
+      keep <- rep(FALSE, length(r_files))
+      for (inc_pattern in include) {
+        keep <- keep | grepl(inc_pattern, file_basenames)
+      }
+      r_files <- r_files[keep]
+    }
+    
+    # Apply exclude patterns
+    if (!is.null(exclude)) {
+      keep <- rep(TRUE, length(r_files))
+      for (exc_pattern in exclude) {
+        keep <- keep & !grepl(exc_pattern, file_basenames)
+      }
+      r_files <- r_files[keep]
+    }
+  }
   
   # Filter to only files with MCP decorators
   mcp_files <- character()

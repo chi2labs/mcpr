@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
 /**
- * Test script for {{SERVER_NAME}} MCP Server
+ * Test script for math-tools MCP Server
  * 
  * This script tests the basic functionality of the generated MCP server
  * by sending JSON-RPC requests and validating responses.
@@ -112,7 +112,7 @@ tests.push({
     assertEqual(response.result.protocolVersion, '2024-11-05', 'Protocol version matches');
     assertExists(response.result.capabilities, 'Capabilities exist');
     assertExists(response.result.serverInfo, 'Server info exists');
-    assertEqual(response.result.serverInfo.name, '{{SERVER_NAME}}', 'Server name matches');
+    assertEqual(response.result.serverInfo.name, 'math-tools', 'Server name matches');
   }
 });
 
@@ -150,11 +150,11 @@ tests.push({
   }
 });
 
-// Additional tests can be added here
+{{ADDITIONAL_TESTS}}
 
 // Main test runner
 async function runTests() {
-  console.log(`${colors.blue}Testing {{SERVER_NAME}} MCP Server${colors.reset}\n`);
+  console.log(`${colors.blue}Testing math-tools MCP Server${colors.reset}\n`);
   
   // Start the server
   console.log('Starting server...');
