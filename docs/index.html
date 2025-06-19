@@ -63,14 +63,14 @@
 <p>You can install the development version of mcpr from GitHub:</p>
 <div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># install.packages("devtools")</span></span>
-<span><span class="fu">devtools</span><span class="fu">::</span><span class="fu">install_github</span><span class="op">(</span><span class="st">"chi2labs/mcpr"</span><span class="op">)</span></span></code></pre></div>
+<span><span class="fu">devtools</span><span class="fu">::</span><span class="fu"><a href="https://remotes.r-lib.org/reference/install_github.html" class="external-link">install_github</a></span><span class="op">(</span><span class="st">"chi2labs/mcpr"</span><span class="op">)</span></span></code></pre></div>
 </div>
 <div class="section level2">
 <h2 id="basic-usage">Basic Usage<a class="anchor" aria-label="anchor" href="#basic-usage"></a>
 </h2>
 <p>Create a simple MCP server with tools and resources:</p>
 <div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va">mcpr</span><span class="op">)</span></span>
+<code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://github.com/chi2labs/mcpr" class="external-link">mcpr</a></span><span class="op">)</span></span>
 <span></span>
 <span><span class="co"># Create a new MCP server</span></span>
 <span><span class="va">server</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/mcp.html">mcp</a></span><span class="op">(</span>name <span class="op">=</span> <span class="st">"My R Analysis Server"</span>, version <span class="op">=</span> <span class="st">"1.0.0"</span><span class="op">)</span></span>
@@ -90,7 +90,10 @@
 <span><span class="op">)</span></span>
 <span></span>
 <span><span class="co"># Run the server on stdio (for Claude Desktop)</span></span>
-<span><span class="va">server</span><span class="op">$</span><span class="fu">mcp_run</span><span class="op">(</span>transport <span class="op">=</span> <span class="st">"stdio"</span><span class="op">)</span></span></code></pre></div>
+<span><span class="va">server</span><span class="op">$</span><span class="fu">mcp_run</span><span class="op">(</span>transport <span class="op">=</span> <span class="st">"stdio"</span><span class="op">)</span></span>
+<span></span>
+<span><span class="co"># Or run with HTTP transport (new!)</span></span>
+<span><span class="va">server</span><span class="op">$</span><span class="fu">mcp_run</span><span class="op">(</span>transport <span class="op">=</span> <span class="st">"http"</span>, port <span class="op">=</span> <span class="fl">8080</span><span class="op">)</span></span></code></pre></div>
 </div>
 <div class="section level2">
 <h2 id="generating-standalone-mcp-servers">Generating Standalone MCP Servers<a class="anchor" aria-label="anchor" href="#generating-standalone-mcp-servers"></a>
@@ -128,11 +131,10 @@
 <span id="cb4-6"><a href="#cb4-6" tabindex="-1"></a><span class="co"># {</span></span>
 <span id="cb4-7"><a href="#cb4-7" tabindex="-1"></a><span class="co">#   "mcpServers": {</span></span>
 <span id="cb4-8"><a href="#cb4-8" tabindex="-1"></a><span class="co">#     "my-tools": {</span></span>
-<span id="cb4-9"><a href="#cb4-9" tabindex="-1"></a><span class="co">#       "command": "node",</span></span>
-<span id="cb4-10"><a href="#cb4-10" tabindex="-1"></a><span class="co">#       "args": ["/path/to/mcp-my-tools/wrapper.js"]</span></span>
-<span id="cb4-11"><a href="#cb4-11" tabindex="-1"></a><span class="co">#     }</span></span>
-<span id="cb4-12"><a href="#cb4-12" tabindex="-1"></a><span class="co">#   }</span></span>
-<span id="cb4-13"><a href="#cb4-13" tabindex="-1"></a><span class="co"># }</span></span></code></pre></div>
+<span id="cb4-9"><a href="#cb4-9" tabindex="-1"></a><span class="co">#       "url": "http://localhost:8080/mcp"</span></span>
+<span id="cb4-10"><a href="#cb4-10" tabindex="-1"></a><span class="co">#     }</span></span>
+<span id="cb4-11"><a href="#cb4-11" tabindex="-1"></a><span class="co">#   }</span></span>
+<span id="cb4-12"><a href="#cb4-12" tabindex="-1"></a><span class="co"># }</span></span></code></pre></div>
 </div>
 <div class="section level3">
 <h3 id="generating-from-existing-server-objects">Generating from Existing Server Objects<a class="anchor" aria-label="anchor" href="#generating-from-existing-server-objects"></a>
@@ -160,10 +162,60 @@
 </div>
 </div>
 <div class="section level2">
+<h2 id="http-transport-new">HTTP Transport (New!)<a class="anchor" aria-label="anchor" href="#http-transport-new"></a>
+</h2>
+<p>mcpr now supports HTTP transport as an alternative to stdio, offering several advantages:</p>
+<div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="co"># Create an HTTP server</span></span>
+<span><span class="va">server</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/mcp_http.html">mcp_http</a></span><span class="op">(</span></span>
+<span>  name <span class="op">=</span> <span class="st">"My HTTP API"</span>,</span>
+<span>  version <span class="op">=</span> <span class="st">"1.0.0"</span>,</span>
+<span>  port <span class="op">=</span> <span class="fl">8080</span></span>
+<span><span class="op">)</span></span>
+<span></span>
+<span><span class="co"># Add tools as usual</span></span>
+<span><span class="va">server</span><span class="op">$</span><span class="fu">mcp_tool</span><span class="op">(</span></span>
+<span>  name <span class="op">=</span> <span class="st">"analyze"</span>,</span>
+<span>  fn <span class="op">=</span> <span class="kw">function</span><span class="op">(</span><span class="va">data</span><span class="op">)</span> <span class="fu"><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/numeric.html" class="external-link">as.numeric</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/strsplit.html" class="external-link">strsplit</a></span><span class="op">(</span><span class="va">data</span>, <span class="st">","</span><span class="op">)</span><span class="op">[[</span><span class="fl">1</span><span class="op">]</span><span class="op">]</span><span class="op">)</span><span class="op">)</span>,</span>
+<span>  description <span class="op">=</span> <span class="st">"Analyze comma-separated numbers"</span></span>
+<span><span class="op">)</span></span>
+<span></span>
+<span><span class="co"># Start the server</span></span>
+<span><span class="va">server</span><span class="op">$</span><span class="fu">mcp_run</span><span class="op">(</span><span class="op">)</span>  <span class="co"># Automatically uses HTTP</span></span></code></pre></div>
+<div class="section level3">
+<h3 id="quick-start-with-http">Quick Start with HTTP<a class="anchor" aria-label="anchor" href="#quick-start-with-http"></a>
+</h3>
+<div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="co"># Start a hello world HTTP server</span></span>
+<span><span class="fu"><a href="reference/mcp_hello_world_http.html">mcp_hello_world_http</a></span><span class="op">(</span>port <span class="op">=</span> <span class="fl">8080</span><span class="op">)</span></span>
+<span></span>
+<span><span class="co"># Test with curl:</span></span>
+<span><span class="co"># curl -X POST http://localhost:8080/mcp \</span></span>
+<span><span class="co">#   -H "Content-Type: application/json" \</span></span>
+<span><span class="co">#   -d '{"jsonrpc":"2.0","method":"tools/list","id":1}'</span></span></code></pre></div>
+</div>
+<div class="section level3">
+<h3 id="http-features">HTTP Features<a class="anchor" aria-label="anchor" href="#http-features"></a>
+</h3>
+<ul>
+<li>
+<strong>Multiple clients</strong>: Handle concurrent connections</li>
+<li>
+<strong>Standard debugging</strong>: Use curl, Postman, or browser tools</li>
+<li>
+<strong>Easy deployment</strong>: Deploy to cloud platforms or containers</li>
+<li>
+<strong>Built-in logging</strong>: Track requests and errors</li>
+<li>
+<strong>No subprocess issues</strong>: Avoids R’s stdin limitations</li>
+</ul>
+</div>
+</div>
+<div class="section level2">
 <h2 id="current-implementation-status">Current Implementation Status<a class="anchor" aria-label="anchor" href="#current-implementation-status"></a>
 </h2>
-<p>✅ <strong>Completed</strong>: - Type conversion system (R ↔︎ JSON) with comprehensive support for: - Atomic types (numeric, character, logical) - Vectors and matrices - Data frames and factors - Lists and arrays - S3/S4 objects - Basic MCP server object with builder pattern - Tool, resource, and prompt registration - stdio transport implementation - JSON-RPC 2.0 protocol handling - Node.js wrapper template generation - Server package generation from code or configuration - Comprehensive test suite</p>
-<p>🚧 <strong>In Progress</strong>: - Decorator system for function annotations - HTTP and WebSocket transports - Package scanning functionality</p>
+<p>✅ <strong>Completed</strong>: - Type conversion system (R ↔︎ JSON) with comprehensive support for: - Atomic types (numeric, character, logical) - Vectors and matrices - Data frames and factors - Lists and arrays - S3/S4 objects - Basic MCP server object with builder pattern - Tool, resource, and prompt registration - stdio transport implementation - HTTP transport with plumber integration - JSON-RPC 2.0 protocol handling - Node.js wrapper template generation - Server package generation from code or configuration - Comprehensive test suite - Logging and error handling for HTTP servers</p>
+<p>🚧 <strong>In Progress</strong>: - Decorator system for function annotations - WebSocket transport - Package scanning functionality</p>
 <p>📋 <strong>Planned</strong>: - Source file parsing with decorators - Integration examples - Performance optimizations - Security features</p>
 </div>
 <div class="section level2">
@@ -175,11 +227,11 @@
 <h2 id="development">Development<a class="anchor" aria-label="anchor" href="#development"></a>
 </h2>
 <p>To run tests:</p>
-<div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu">devtools</span><span class="fu">::</span><span class="fu">test</span><span class="op">(</span><span class="op">)</span></span></code></pre></div>
+<div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu">devtools</span><span class="fu">::</span><span class="fu"><a href="https://devtools.r-lib.org/reference/test.html" class="external-link">test</a></span><span class="op">(</span><span class="op">)</span></span></code></pre></div>
 <p>To build documentation:</p>
-<div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu">devtools</span><span class="fu">::</span><span class="fu">document</span><span class="op">(</span><span class="op">)</span></span></code></pre></div>
+<div class="sourceCode" id="cb10"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu">devtools</span><span class="fu">::</span><span class="fu"><a href="https://devtools.r-lib.org/reference/document.html" class="external-link">document</a></span><span class="op">(</span><span class="op">)</span></span></code></pre></div>
 </div>
 <div class="section level2">
 <h2 id="license">License<a class="anchor" aria-label="anchor" href="#license"></a>
@@ -214,7 +266,7 @@
 <div class="developers">
 <h2 data-toc-skip>Developers</h2>
 <ul class="list-unstyled">
-<li>Aleksander Dietrichson <br><small class="roles"> Author, maintainer </small>   </li>
+<li>Aleksander Dietrichson <br><small class="roles"> Author, maintainer </small>  </li>
 </ul>
 </div>
 
@@ -235,7 +287,7 @@
 </div>
 
 <div class="pkgdown-footer-right">
-  <p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.1.3.</p>
+  <p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.1.1.</p>
 </div>
 
     </footer>

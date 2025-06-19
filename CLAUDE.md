@@ -36,6 +36,9 @@ devtools::document()
 
 # Build vignettes
 devtools::build_vignettes()
+
+# Build website for package
+pkgdown::build_site(preview = FALSE)
 ```
 ## Repository
 Our repo is chi2labs/mcpr

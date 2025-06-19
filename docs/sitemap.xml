@@ -7,6 +7,7 @@
 <url><loc>/articles/index.html</loc></url>
 <url><loc>/authors.html</loc></url>
 <url><loc>/index.html</loc></url>
+<url><loc>/reference/HttpTransport.html</loc></url>
 <url><loc>/reference/MCPServer.html</loc></url>
 <url><loc>/reference/StdioTransport.html</loc></url>
 <url><loc>/reference/can_serialize.html</loc></url>
@@ -37,6 +38,8 @@
 <url><loc>/reference/mcp.html</loc></url>
 <url><loc>/reference/mcp_deserialize.html</loc></url>
 <url><loc>/reference/mcp_hello_world.html</loc></url>
+<url><loc>/reference/mcp_hello_world_http.html</loc></url>
+<url><loc>/reference/mcp_http.html</loc></url>
 <url><loc>/reference/mcp_serialize.html</loc></url>
 <url><loc>/reference/mcp_source_directory.html</loc></url>
 <url><loc>/reference/mcpr-package.html</loc></url>
