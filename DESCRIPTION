@@ -2,7 +2,7 @@ Package: mcpr
 Title: Model Context Protocol for R
 Version: 0.0.0.9000
 Authors@R: 
-    person("First", "Last", , "first.last@example.com", role = c("aut", "cre"))
+    person("Aleksander", "Dietrichson", , "dietrichson@chi2labs.com", role = c("aut", "cre"))
 Description: Expose R functions, files, or entire packages through the Model
     Context Protocol (MCP). This package provides a simple, decorator-based
     system for creating MCP servers that integrate with AI assistants like

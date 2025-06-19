@@ -45,3 +45,5 @@ interactive-test.R
 *.swp
 *.swo
 mcpr.Rcheck/
+mcpr*.tar.gz
+mcpr*.tgz
