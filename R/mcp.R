@@ -219,10 +219,10 @@ MCPServer <- R6::R6Class(
         }
         private$transport <- StdioTransport$new(self)
       } else if (transport == "http") {
-        if (!requireNamespace("httpuv", quietly = TRUE)) {
-          stop("Package 'httpuv' is required for HTTP transport")
+        if (!requireNamespace("plumber", quietly = TRUE)) {
+          stop("Package 'plumber' is required for HTTP transport")
         }
-        stop("HTTP transport not yet implemented")
+        private$transport <- HttpTransport$new(self, host = host, port = port %||% 8080)
       } else if (transport == "websocket") {
         stop("WebSocket transport not yet implemented")
       }
@@ -396,12 +396,12 @@ MCPServer <- R6::R6Class(
       args <- formals(fn)
       
       if (length(args) == 0) {
-        return(list(type = "object", properties = list()))
+        return(list(type = "object", properties = list(), required = I(list())))
       }
       
       # Build parameter schema
       properties <- list()
-      required <- character()
+      required <- list()
       
       for (i in seq_along(args)) {
         arg_name <- names(args)[i]
@@ -420,11 +420,13 @@ MCPServer <- R6::R6Class(
         )
       }
       
-      list(
+      schema <- list(
         type = "object",
         properties = properties,
-        required = if (length(required) > 0) required else NULL
+        required = if (length(required) > 0) as.list(required) else I(list())
       )
+      
+      schema
     }
   )
 )

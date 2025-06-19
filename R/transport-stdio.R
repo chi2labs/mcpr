@@ -217,10 +217,19 @@ StdioTransport <- R6::R6Class(
       list(
         tools = if (length(self$server$tools) > 0) {
           lapply(self$server$tools, function(tool) {
+            # Fix required field to ensure it's an array
+            schema <- tool$parameters
+            if (!is.null(schema$required)) {
+              if (length(schema$required) == 0) {
+                schema$required <- I(list())
+              } else {
+                schema$required <- I(as.list(schema$required))
+              }
+            }
             list(
               name = tool$name,
               description = tool$description,
-              inputSchema = tool$parameters
+              inputSchema = schema
             )
           })
         } else list()
