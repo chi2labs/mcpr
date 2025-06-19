@@ -202,23 +202,18 @@ MCPServer <- R6::R6Class(
     
     #' @description
     #' Run the MCP server
-    #' @param transport Transport type ("stdio", "http", "websocket")
+    #' @param transport Transport type ("http", "websocket")
     #' @param host Host address for HTTP/WebSocket transport
     #' @param port Port number for HTTP/WebSocket transport
     #' @return Server handle (transport-specific)
-    mcp_run = function(transport = "stdio", host = "127.0.0.1", port = NULL) {
+    mcp_run = function(transport = "http", host = "127.0.0.1", port = NULL) {
       # Validate transport
-      if (!transport %in% c("stdio", "http", "websocket")) {
-        stop("Invalid transport: ", transport, ". Must be one of: stdio, http, websocket")
+      if (!transport %in% c("http", "websocket")) {
+        stop("Invalid transport: ", transport, ". Must be one of: http, websocket")
       }
       
       # Create appropriate transport
-      if (transport == "stdio") {
-        if (!requireNamespace("processx", quietly = TRUE)) {
-          stop("Package 'processx' is required for stdio transport")
-        }
-        private$transport <- StdioTransport$new(self)
-      } else if (transport == "http") {
+      if (transport == "http") {
         if (!requireNamespace("plumber", quietly = TRUE)) {
           stop("Package 'plumber' is required for HTTP transport")
         }

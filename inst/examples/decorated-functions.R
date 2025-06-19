@@ -182,4 +182,4 @@ visualization_request <- NULL
 # library(mcpr)
 # server <- mcp(name = "Statistical Analysis Server", version = "1.0.0")
 # server$mcp_source("decorated-functions.R")
-# server$mcp_run(transport = "stdio")
+# server$mcp_run(transport = "http", port = 8080)

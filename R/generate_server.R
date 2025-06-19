@@ -77,23 +77,15 @@ generate_mcp_server <- function(name,
     R_FLAGS = "--quiet --slave --no-echo"
   )
   
-  # Generate wrapper
-  generate_wrapper(server_dir, vars)
-  
   # Generate R server
   generate_r_server(server_dir, vars, tools, resources, prompts, template)
   
   # Generate supporting files
-  generate_package_json(server_dir, vars)
   generate_readme(server_dir, vars)
-  generate_mcp_json(server_dir, vars)
-  generate_test_script(server_dir, vars)
   generate_gitignore(server_dir)
   
-  # Make scripts executable
-  wrapper_path <- file.path(server_dir, "wrapper.js")
+  # Make server script executable
   server_path <- file.path(server_dir, "server.R")
-  Sys.chmod(wrapper_path, "755")
   Sys.chmod(server_path, "755")
   
   message(sprintf("MCP server '%s' created successfully in: %s", name, server_dir))
@@ -106,23 +98,6 @@ generate_mcp_server <- function(name,
   invisible(server_dir)
 }
 
-#' Generate Node.js Wrapper
-#'
-#' @param server_dir Server directory path
-#' @param vars Template variables
-#' @keywords internal
-generate_wrapper <- function(server_dir, vars) {
-  template_path <- system.file("templates", "wrapper.js", package = "mcpr")
-  if (!file.exists(template_path)) {
-    stop("Wrapper template not found. Please reinstall mcpr package.")
-  }
-  
-  wrapper_content <- readLines(template_path)
-  wrapper_content <- replace_template_vars(wrapper_content, vars)
-  
-  wrapper_path <- file.path(server_dir, "wrapper.js")
-  writeLines(wrapper_content, wrapper_path)
-}
 
 #' Generate R Server
 #'
@@ -160,17 +135,6 @@ generate_r_server <- function(server_dir, vars, tools, resources, prompts, templ
   writeLines(server_content, server_path)
 }
 
-#' Generate package.json
-#'
-#' @param server_dir Server directory path
-#' @param vars Template variables
-#' @keywords internal
-generate_package_json <- function(server_dir, vars) {
-  template_path <- system.file("templates", "package.json", package = "mcpr")
-  content <- readLines(template_path)
-  content <- replace_template_vars(content, vars)
-  writeLines(content, file.path(server_dir, "package.json"))
-}
 
 #' Generate README.md
 #'
@@ -184,29 +148,6 @@ generate_readme <- function(server_dir, vars) {
   writeLines(content, file.path(server_dir, "README.md"))
 }
 
-#' Generate mcp.json Configuration Example
-#'
-#' @param server_dir Server directory path
-#' @param vars Template variables
-#' @keywords internal
-generate_mcp_json <- function(server_dir, vars) {
-  template_path <- system.file("templates", "mcp.json", package = "mcpr")
-  content <- readLines(template_path)
-  content <- replace_template_vars(content, vars)
-  writeLines(content, file.path(server_dir, "mcp.json"))
-}
-
-#' Generate Test Script
-#'
-#' @param server_dir Server directory path
-#' @param vars Template variables
-#' @keywords internal
-generate_test_script <- function(server_dir, vars) {
-  template_path <- system.file("templates", "test.js", package = "mcpr")
-  content <- readLines(template_path)
-  content <- replace_template_vars(content, vars)
-  writeLines(content, file.path(server_dir, "test.js"))
-}
 
 #' Generate .gitignore
 #'
