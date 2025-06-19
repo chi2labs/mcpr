@@ -6,3 +6,6 @@
 ^\.git$
 ^\.mcp\.json$
 ^\.claude$
+^_pkgdown\.yml$
+^docs$
+^pkgdown$
