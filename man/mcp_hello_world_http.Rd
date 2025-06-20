@@ -28,3 +28,17 @@ This function starts a simple MCP server over HTTP with a single "hello" tool
 that demonstrates the mcpr package is working correctly. Unlike the stdio version,
 this server can handle multiple clients and is easier to test with standard HTTP tools.
 }
+\examples{
+\dontrun{
+# Start the HTTP hello world server on default port
+mcp_hello_world_http()
+
+# Start on a custom port with documentation
+mcp_hello_world_http(port = 3000, docs = TRUE)
+
+# Test with curl:
+# curl -X POST http://localhost:8080/mcp \\
+#   -H "Content-Type: application/json" \\
+#   -d \'{"jsonrpc":"2.0","method":"tools/list","id":1}\'
+}
+}

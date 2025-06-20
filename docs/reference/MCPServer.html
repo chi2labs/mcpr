@@ -9,7 +9,7 @@ manages tools, resources, prompts, and handles the protocol communication."></he
 
     <a class="navbar-brand me-2" href="../index.html">mcpr</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.0.0.9000</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.9.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -21,6 +21,7 @@ manages tools, resources, prompts, and handles the protocol communication."></he
 <li class="nav-item dropdown">
   <button class="nav-link dropdown-toggle" type="button" id="dropdown-articles" data-bs-toggle="dropdown" aria-expanded="false" aria-haspopup="true">Articles</button>
   <ul class="dropdown-menu" aria-labelledby="dropdown-articles"><li><a class="dropdown-item" href="../articles/creating-servers.html">Creating MCP Servers with mcpr</a></li>
+    <li><a class="dropdown-item" href="../articles/using-decorators.html">Using Decorators in mcpr</a></li>
   </ul></li>
       </ul><ul class="navbar-nav"><li class="nav-item"><form class="form-inline" role="search">
  <input class="form-control" type="search" name="search-input" id="search-input" autocomplete="off" aria-label="Search site" placeholder="Search for" data-search-index="../search.json"></form></li>
@@ -255,13 +256,13 @@ manages tools, resources, prompts, and handles the protocol communication.</p>
 <h3 id="method-mcp-run-">Method <code>mcp_run()</code><a class="anchor" aria-label="anchor" href="#method-mcp-run-"></a></h3>
 <p>Run the MCP server</p><div class="section">
 <h4 id="usage-6">Usage<a class="anchor" aria-label="anchor" href="#usage-6"></a></h4>
-<p></p><div class="r"><div class="sourceCode"><pre><code><span><span class="va">MCPServer</span><span class="op">$</span><span class="fu">mcp_run</span><span class="op">(</span>transport <span class="op">=</span> <span class="st">"stdio"</span>, host <span class="op">=</span> <span class="st">"127.0.0.1"</span>, port <span class="op">=</span> <span class="cn">NULL</span><span class="op">)</span></span></code></pre></div><p></p></div>
+<p></p><div class="r"><div class="sourceCode"><pre><code><span><span class="va">MCPServer</span><span class="op">$</span><span class="fu">mcp_run</span><span class="op">(</span>transport <span class="op">=</span> <span class="st">"http"</span>, host <span class="op">=</span> <span class="st">"127.0.0.1"</span>, port <span class="op">=</span> <span class="cn">NULL</span><span class="op">)</span></span></code></pre></div><p></p></div>
 </div>
 
 <div class="section">
 <h4 id="arguments-6">Arguments<a class="anchor" aria-label="anchor" href="#arguments-6"></a></h4>
 <p></p><div class="arguments"><dl><dt><code>transport</code></dt>
-<dd><p>Transport type ("stdio", "http", "websocket")</p></dd>
+<dd><p>Transport type ("http", "websocket")</p></dd>
 
 
 <dt><code>host</code></dt>
