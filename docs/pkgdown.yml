@@ -3,4 +3,5 @@ pkgdown: 2.1.1
 pkgdown_sha: ~
 articles:
   creating-servers: creating-servers.html
-last_built: 2025-06-20T10:49Z
+  using-decorators: using-decorators.html
+last_built: 2025-06-20T14:49Z

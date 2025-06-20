@@ -6,7 +6,7 @@
 \alias{mcpr-package}
 \title{mcpr: Model Context Protocol for R}
 \description{
-Expose R functions, files, or entire packages through the Model Context Protocol (MCP). This package provides a simple, decorator-based system for creating MCP servers that integrate with AI assistants like Claude Desktop. Following patterns established by plumber, mcpr makes it easy to connect R code with large language models.
+Expose R functions, R resources or entire packages through the Model Context Protocol (MCP). This package provides a simple, decorator-based system for creating MCP servers that integrate with AI assistants like Claude Desktop. Following patterns established by plumber, mcpr makes it easy to connect R code with large language models.
 }
 \seealso{
 Useful links:
