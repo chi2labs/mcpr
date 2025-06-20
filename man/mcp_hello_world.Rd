@@ -4,11 +4,12 @@
 \alias{mcp_hello_world}
 \title{Start a minimal MCP hello world server}
 \usage{
-mcp_hello_world(transport = "stdio")
+mcp_hello_world(host = "127.0.0.1", port = 8080)
 }
 \arguments{
-\item{transport}{Character string specifying the transport type.
-Currently only "stdio" is supported.}
+\item{host}{Character string specifying the host to bind to (default: "127.0.0.1")}
+
+\item{port}{Integer specifying the port to listen on (default: 8080)}
 }
 \value{
 Invisible NULL. The function starts the server which runs
@@ -27,8 +28,7 @@ mcp_hello_world()
 # {
 #   "mcpServers": {
 #     "r-hello": {
-#       "command": "R",
-#       "args": ["--quiet", "--slave", "-e", "mcpr::mcp_hello_world()"]
+#       "url": "http://localhost:8080/mcp"
 #     }
 #   }
 # }

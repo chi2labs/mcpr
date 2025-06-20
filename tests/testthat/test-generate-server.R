@@ -16,12 +16,8 @@ test_that("generate_mcp_server creates correct directory structure", {
   
   # Check all files exist
   expected_files <- c(
-    "wrapper.js",
     "server.R",
-    "package.json",
     "README.md",
-    "mcp.json",
-    "test.js",
     ".gitignore"
   )
   
@@ -157,9 +153,9 @@ test_that("MCPServer generate method works", {
   expect_true(dir.exists(server_dir))
   expect_equal(basename(server_dir), "mcp-test-server")
   
-  # Check package.json has correct version
-  pkg_json <- jsonlite::fromJSON(file.path(server_dir, "package.json"))
-  expect_equal(pkg_json$version, "2.0.0")
+  # Check server.R exists with correct content
+  server_content <- readLines(file.path(server_dir, "server.R"))
+  expect_true(any(grepl("test_tool", server_content)))
   
   # Clean up
   unlink(server_dir, recursive = TRUE)
@@ -191,9 +187,9 @@ test_that("generate_from_config works with JSON", {
   expect_true(dir.exists(server_dir))
   expect_equal(basename(server_dir), "mcp-config-test")
   
-  # Check version
-  pkg_json <- jsonlite::fromJSON(file.path(server_dir, "package.json"))
-  expect_equal(pkg_json$version, "1.2.3")
+  # Check server was created with correct name from config
+  server_content <- readLines(file.path(server_dir, "server.R"))
+  expect_true(any(grepl("config-test", server_content)))
   
   # Clean up
   unlink(server_dir, recursive = TRUE)
@@ -241,7 +237,7 @@ test_that("minimal template is used when specified", {
   unlink(server_dir, recursive = TRUE)
 })
 
-test_that("wrapper.js is executable after generation", {
+test_that("server.R is executable after generation", {
   skip_on_os("windows")  # File permissions work differently on Windows
   
   temp_dir <- tempdir()
@@ -253,15 +249,12 @@ test_that("wrapper.js is executable after generation", {
     path = temp_dir
   )
   
-  wrapper_path <- file.path(server_dir, "wrapper.js")
   server_path <- file.path(server_dir, "server.R")
   
-  # Check files are executable
-  wrapper_info <- file.info(wrapper_path)
+  # Check server.R is executable
   server_info <- file.info(server_path)
   
   # On Unix-like systems, check executable bit
-  expect_true(file.access(wrapper_path, 1) == 0)
   expect_true(file.access(server_path, 1) == 0)
   
   # Clean up

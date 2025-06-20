@@ -187,13 +187,13 @@ Self for chaining
 \subsection{Method \code{mcp_run()}}{
 Run the MCP server
 \subsection{Usage}{
-\if{html}{\out{<div class="r">}}\preformatted{MCPServer$mcp_run(transport = "stdio", host = "127.0.0.1", port = NULL)}\if{html}{\out{</div>}}
+\if{html}{\out{<div class="r">}}\preformatted{MCPServer$mcp_run(transport = "http", host = "127.0.0.1", port = NULL)}\if{html}{\out{</div>}}
 }
 
 \subsection{Arguments}{
 \if{html}{\out{<div class="arguments">}}
 \describe{
-\item{\code{transport}}{Transport type ("stdio", "http", "websocket")}
+\item{\code{transport}}{Transport type ("http", "websocket")}
 
 \item{\code{host}}{Host address for HTTP/WebSocket transport}
 
