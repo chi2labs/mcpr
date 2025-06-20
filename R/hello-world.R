@@ -85,9 +85,9 @@ mcp_hello_world <- function(host = "127.0.0.1", port = 8080) {
 #' mcp_hello_world_http(port = 3000, docs = TRUE)
 #' 
 #' # Test with curl:
-#' # curl -X POST http://localhost:8080/mcp \
-#' #   -H "Content-Type: application/json" \
-#' #   -d '{"jsonrpc":"2.0","method":"tools/list","id":1}'
+#' # curl -X POST http://localhost:8080/mcp \\
+#' #   -H "Content-Type: application/json" \\
+#' #   -d \'{"jsonrpc":"2.0","method":"tools/list","id":1}\'
 #' }
 mcp_hello_world_http <- function(host = "127.0.0.1", port = 8080, docs = FALSE, quiet = FALSE) {
   # Create server using the mcp_http convenience function
