@@ -18,6 +18,8 @@ devtools::install_github("chi2labs/mcpr")
 
 ## Basic Usage
 
+### Method 1: Programmatic API
+
 Create a simple MCP server with tools and resources:
 
 ```r
@@ -40,9 +42,58 @@ server$mcp_resource(
   description = "Server information"
 )
 
-# Run the server on stdio (for Claude Desktop)
-server$mcp_run(transport = "stdio")
+# Run the server with HTTP transport (recommended)
+server$mcp_run(transport = "http", port = 8080)
 ```
+
+### Method 2: Decorator Syntax
+
+Use plumber-style decorators to define MCP tools, resources, and prompts:
+
+```r
+# Create a file: analysis-tools.R
+#* @mcp_tool
+#* @description Calculate summary statistics for a numeric vector
+#* @param x numeric vector to analyze
+#* @param na.rm logical whether to remove NA values (default: TRUE)
+calculate_stats <- function(x, na.rm = TRUE) {
+  list(
+    mean = mean(x, na.rm = na.rm),
+    median = median(x, na.rm = na.rm),
+    sd = sd(x, na.rm = na.rm),
+    min = min(x, na.rm = na.rm),
+    max = max(x, na.rm = na.rm)
+  )
+}
+
+#* @mcp_resource
+#* @description List available datasets
+#* @mime_type application/json
+list_datasets <- function() {
+  data(package = "datasets")$results[, "Item"]
+}
+
+#* @mcp_prompt
+#* @description Request statistical analysis
+#* @template Analyze the {{dataset}} dataset using {{method}} and provide insights about {{focus}}
+#* @param_dataset The dataset to analyze
+#* @param_method The analysis method to use
+#* @param_focus The aspect to focus on
+statistical_analysis_prompt <- NULL
+```
+
+Load decorated functions into a server:
+
+```r
+# Create server and load decorated functions
+server <- mcp(name = "Analysis Server", version = "1.0.0")
+server$mcp_source("analysis-tools.R")
+
+# Run with HTTP transport
+server$mcp_run(transport = "http", port = 8080)
+```
+
+See the complete example at `inst/examples/decorated-functions.R`.
 
 ## Generating Standalone MCP Servers
 
@@ -130,22 +181,23 @@ See `vignette("creating-servers")` for detailed documentation on server generati
   - S3/S4 objects
 - Basic MCP server object with builder pattern
 - Tool, resource, and prompt registration
-- stdio transport implementation
+- Decorator system for function annotations (`@mcp_tool`, `@mcp_resource`, `@mcp_prompt`)
+- Source file parsing with decorators via `mcp_source()` method
+- HTTP transport implementation (recommended for all use cases)
 - JSON-RPC 2.0 protocol handling
-- Node.js wrapper template generation
 - Server package generation from code or configuration
 - Comprehensive test suite
 
 🚧 **In Progress**:
-- Decorator system for function annotations
-- HTTP and WebSocket transports
-- Package scanning functionality
+- WebSocket transport
+- Enhanced documentation and vignettes
+- Performance optimizations
 
 📋 **Planned**:
-- Source file parsing with decorators
-- Integration examples
-- Performance optimizations
-- Security features
+- Additional transport options
+- Authentication and security features
+- Advanced caching mechanisms
+- Rate limiting support
 
 ## Example Server
 
