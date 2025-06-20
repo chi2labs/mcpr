@@ -1,131 +1,104 @@
-# Architecture Insights from MCP Implementation
+# Architecture Insights - mcpr Package
 
-## Key Findings from Implementation
+## Key Findings from HTTP-First Implementation
 
-During the implementation of the hello world MCP server, we discovered critical limitations that fundamentally affect the architecture:
+After extensive development and testing, the mcpr package has successfully adopted an HTTP-first architecture that provides:
 
-### 1. R's Subprocess stdin Handling is Broken
+1. **Reliable Transport**: HTTP/JSON-RPC communication eliminates the complexity of subprocess management
+2. **Multi-Client Support**: Unlike stdio, HTTP servers can handle multiple concurrent connections
+3. **Standard Tooling**: HTTP endpoints can be tested with curl, Postman, or any HTTP client
+4. **Clean Architecture**: Direct R-to-client communication without intermediate layers
 
-- `readLines(stdin())` returns EOF immediately when R is launched as a subprocess
-- Even with `file("stdin", open="r", blocking=TRUE)`, R's stdin handling is unreliable
-- This is a fundamental limitation of R in subprocess contexts
+## Architectural Advantages
 
-### 2. stderr Output Breaks Claude Desktop
+### HTTP Transport Benefits
+- **No subprocess management**: R server runs as a standalone HTTP service
+- **Clean error handling**: HTTP status codes and JSON error responses
+- **Debugging simplicity**: Standard HTTP debugging tools apply
+- **Deployment flexibility**: Can run locally or be deployed to any server
 
-- ANY output to stderr causes Claude Desktop to fail connection
-- R packages often write to stderr (startup messages, warnings, etc.)
-- Even suppressing messages with `suppressPackageStartupMessages()` isn't enough
+### R's Web Framework Strengths
+The R ecosystem provides robust HTTP server capabilities:
+- **plumber**: Production-ready REST API framework with automatic OpenAPI documentation
+- **httpuv**: Low-level HTTP server with WebSocket support
+- **jsonlite**: Reliable JSON serialization with proper handling of R data types
 
-### 3. Node.js Wrapper is MANDATORY
+## Simplified Package Design
 
-- Not optional or a nice-to-have - it's essential for ANY R MCP server
-- Node.js properly handles stdin/stdout/stderr in subprocess contexts
-- Allows filtering of stderr to prevent connection failures
-
-## Architectural Implications
-
-### Mandatory Three-Layer Architecture
-
+### Core Architecture
 ```
-┌─────────────────┐     ┌──────────────────┐     ┌─────────────────┐
-│  Claude Desktop │────▶│  Node.js Wrapper │────▶│   R MCP Server  │
-│  (or any MCP    │◀────│  (Required)      │◀────│  (Clean Output) │
-│   client)       │     │                  │     │                 │
-└─────────────────┘     └──────────────────┘     └─────────────────┘
+┌─────────────┐     HTTP/JSON-RPC     ┌──────────────┐
+│ MCP Client  │◄────────────────────►│   R Server   │
+│   (Claude)  │                       │  (plumber)   │
+└─────────────┘                       └──────────────┘
 ```
 
-### Why This Architecture is Non-Negotiable
+### Implementation Stack
+1. **Transport Layer**: HTTP via plumber
+2. **Protocol Layer**: MCP/JSON-RPC handling in pure R
+3. **Function Layer**: Direct R function registration and execution
 
-1. **Subprocess Communication**: R cannot reliably read from stdin when launched as a subprocess
-2. **Error Stream Management**: Node.js can filter stderr, preventing R's output from breaking connections
-3. **Protocol Compliance**: Ensures only clean JSON-RPC messages reach the MCP client
+## Best Practices
 
-## Revised Package Design
-
-### Core Principle: Generate Complete Server Packages
-
-Instead of providing R classes that users instantiate, the package should:
-
-1. **Parse** user's R functions with decorators
-2. **Generate** a complete server package including:
-   - Clean R server script (no stderr output)
-   - Node.js wrapper script
-   - package.json for npm installation
-   - Configuration examples
-
-### Example Workflow
-
+### Server Implementation
 ```r
-# User writes functions with decorators
-#* @mcp_tool
-#* @description Calculate statistics
-calculate_stats <- function(data, method = "mean") {
-  # Implementation
-}
+# Simple HTTP MCP server
+server <- mcp_http("My R Analysis Server", "1.0.0", port = 8080)
 
-# mcpr generates a complete server package
-mcp_create_server(
-  source = "my_functions.R",
-  output_dir = "my-stats-server",
-  name = "stats-server"
+# Register functions directly
+server$register_tool(
+  name = "analyze_data",
+  fn = function(data, method) {
+    # Direct R implementation
+  },
+  description = "Analyze data using R"
 )
 
-# Output structure:
-# my-stats-server/
-# ├── package.json      # npm package definition
-# ├── index.js          # Node.js wrapper (auto-generated)
-# ├── server.R          # R MCP server (auto-generated)
-# ├── README.md         # Installation instructions
-# └── mcp.json          # Example Claude Desktop config
+# Start serving
+server$run()
 ```
 
-### Installation for End Users
-
-```bash
-cd my-stats-server
-npm install -g .
-# Server is now available as 'stats-server' command
+### Configuration for Claude Desktop
+```json
+{
+  "mcpServers": {
+    "r-analysis": {
+      "url": "http://localhost:8080/mcp"
+    }
+  }
+}
 ```
 
-## Technical Requirements
+## Technical Considerations
 
-### R Server Requirements
+### JSON Serialization
+- Use `jsonlite::toJSON()` with `auto_unbox = TRUE` for proper scalar handling
+- Protect empty arrays with `I()` to ensure correct serialization
+- Handle R's special values (NA, NULL, Inf) appropriately
 
-1. **No stderr output** - Not even startup messages
-2. **Blocking stdin** - Use `file("stdin", open="r", blocking=TRUE)`
-3. **Clean JSON only** - Only JSON-RPC messages to stdout
-4. **Graceful shutdown** - Handle EOF and termination signals
+### Error Handling
+- Implement proper JSON-RPC error responses
+- Use HTTP status codes meaningfully
+- Provide clear error messages for debugging
 
-### Node.js Wrapper Requirements
+### Performance
+- HTTP overhead is minimal for typical MCP use cases
+- Connection pooling handled by HTTP clients
+- Supports streaming for large datasets via chunked responses
 
-1. **Spawn R process** with flags: `--quiet --slave --no-echo`
-2. **Pipe stdin/stdout** between MCP client and R
-3. **Filter stderr** - Never pass R's stderr to client
-4. **Handle signals** - Propagate SIGTERM/SIGINT to R process
+## Deployment Options
 
-### Package Generator Requirements
-
-1. **Template-based** - Use templates for consistency
-2. **Validate decorators** - Ensure proper syntax
-3. **Type inference** - Generate proper JSON schemas
-4. **Test utilities** - Include testing capabilities
-
-## Implementation Priority
-
-1. **First**: Create working Node.js wrapper template
-2. **Second**: Build R server generator (clean output)
-3. **Third**: Implement decorator parser
-4. **Fourth**: Create package generator
-5. **Fifth**: Add CLI tools and utilities
+1. **Local Development**: Run on localhost for Claude Desktop
+2. **Network Deployment**: Host on internal network for team access
+3. **Cloud Deployment**: Deploy to cloud services with proper authentication
+4. **Containerization**: Package as Docker containers for easy deployment
 
 ## Conclusion
 
-The discovery that R cannot reliably handle stdin in subprocess contexts fundamentally changes the architecture. Rather than fighting this limitation, the package embraces Node.js as a required component, making it transparent to users through code generation.
+The HTTP-first approach has proven to be the optimal architecture for mcpr:
+- Eliminates complexity of subprocess and stdio management
+- Leverages R's mature web framework ecosystem
+- Provides flexibility for various deployment scenarios
+- Maintains clean separation of concerns
 
-This approach:
-- Acknowledges R's limitations honestly
-- Provides a robust solution that works reliably
-- Maintains ease of use through automation
-- Ensures compatibility with all MCP clients
-
-The key insight: **Don't try to fix R's subprocess limitations - architect around them.**
+This architecture makes MCP servers in R as straightforward to implement as any REST API, opening up R's analytical capabilities to AI assistants with minimal complexity.

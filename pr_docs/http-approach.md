@@ -191,13 +191,20 @@ function(req) {
 2. **Deployment ecosystem**: Established R web service deployment patterns
 3. **JSON handling**: jsonlite provides efficient, R-native JSON processing
 4. **Error handling**: HTTP status codes map cleanly to R's condition system
-5. **Testing**: Use httr or curl packages for comprehensive testing
+5. **Testing**: Use httr2 or curl packages for comprehensive testing
 
 **Development Workflow**
 1. **Rapid prototyping**: plumber's annotation system enables quick iteration
 2. **Interactive development**: Test endpoints immediately with browser/curl
 3. **Swagger integration**: Automatic API documentation generation
 4. **Logging**: Standard R logging packages work seamlessly
+
+**Critical JSON Serialization Note**
+When using `jsonlite::toJSON()` with `auto_unbox = TRUE` (recommended for MCP compliance), protect empty arrays with `I()` to ensure they serialize as `[]` rather than `{}`:
+```r
+# Ensure empty required arrays serialize correctly
+schema$required <- if (length(required) == 0) I(list()) else required
+```
 
 ### Recommended R Implementation Stack
 
