@@ -23,8 +23,8 @@ Create a simple MCP server with tools and resources:
 ```r
 library(mcpr)
 
-# Create a new MCP server
-server <- mcp(name = "My R Analysis Server", version = "1.0.0")
+# Create a new HTTP MCP server
+server <- mcp_http(name = "My R Analysis Server", version = "1.0.0", port = 8080)
 
 # Add a tool
 server$mcp_tool(
@@ -40,111 +40,35 @@ server$mcp_resource(
   description = "Server information"
 )
 
-# Run the server on stdio (for Claude Desktop)
-server$mcp_run(transport = "stdio")
-
-# Or run with HTTP transport (new!)
-server$mcp_run(transport = "http", port = 8080)
+# Run the server
+server$mcp_run()
 ```
 
-## Generating Standalone MCP Servers
+## Configure Claude Desktop
 
-Due to R's stdin handling limitations in subprocess contexts, mcpr provides Node.js wrapper templates that ensure reliable communication with MCP clients like Claude Desktop.
+Add your server to Claude Desktop's configuration:
 
-### Quick Server Generation
-
-Generate a complete MCP server package with Node.js wrapper:
-
-```r
-# Generate a simple server
-generate_mcp_server(
-  name = "my-tools",
-  title = "My R Tools", 
-  description = "Useful R tools for data analysis",
-  tools = list(
-    analyze = list(
-      description = "Analyze a dataset",
-      parameters = list(
-        data = list(type = "object", description = "Data to analyze")
-      )
-    )
-  )
-)
+```json
+{
+  "mcpServers": {
+    "r-analysis": {
+      "url": "http://localhost:8080/mcp"
+    }
+  }
+}
 ```
 
-This creates a complete server in `./mcp-my-tools/` with:
-- `wrapper.js` - Node.js wrapper that handles stdin/stdout properly
-- `server.R` - R server implementation
-- `package.json` - NPM package configuration
-- Test and documentation files
+## HTTP Transport
 
-### Using the Generated Server
+mcpr uses HTTP transport as the primary method for MCP communication, offering several advantages:
 
-```bash
-cd mcp-my-tools
-npm install
-npm test
+- **Multiple clients**: Handle concurrent connections
+- **Standard debugging**: Use curl, Postman, or browser tools
+- **Easy deployment**: Deploy to cloud platforms or containers
+- **Built-in logging**: Track requests and errors
+- **Reliable communication**: No subprocess or stdin/stdout issues
 
-# Add to Claude Desktop config:
-# {
-#   "mcpServers": {
-#     "my-tools": {
-#       "url": "http://localhost:8080/mcp"
-#     }
-#   }
-# }
-```
-
-### Generating from Existing Server Objects
-
-```r
-# Create and configure a server
-server <- mcp(name = "Stats Server", version = "1.0.0")
-server$mcp_tool(name = "t_test", fn = t.test, description = "Perform t-test")
-server$mcp_tool(name = "cor_test", fn = cor.test, description = "Correlation test")
-
-# Generate standalone package
-server$generate(path = "./servers")
-```
-
-### Configuration Files
-
-Create servers from YAML or JSON configuration:
-
-```r
-# Create example configuration
-create_example_config("server-config.yaml")
-
-# Generate from configuration
-generate_from_config("server-config.yaml")
-```
-
-See `vignette("creating-servers")` for detailed documentation on server generation.
-
-## HTTP Transport (New!)
-
-mcpr now supports HTTP transport as an alternative to stdio, offering several advantages:
-
-```r
-# Create an HTTP server
-server <- mcp_http(
-  name = "My HTTP API",
-  version = "1.0.0",
-  port = 8080
-)
-
-# Add tools as usual
-server$mcp_tool(
-  name = "analyze",
-  fn = function(data) summary(as.numeric(strsplit(data, ",")[[1]])),
-  description = "Analyze comma-separated numbers"
-)
-
-# Start the server
-server$mcp_run()  # Automatically uses HTTP
-```
-
-### Quick Start with HTTP
+### Quick Start
 
 ```r
 # Start a hello world HTTP server
@@ -156,13 +80,87 @@ mcp_hello_world_http(port = 8080)
 #   -d '{"jsonrpc":"2.0","method":"tools/list","id":1}'
 ```
 
-### HTTP Features
+### Creating Servers from Functions
 
-- **Multiple clients**: Handle concurrent connections
-- **Standard debugging**: Use curl, Postman, or browser tools
-- **Easy deployment**: Deploy to cloud platforms or containers
-- **Built-in logging**: Track requests and errors
-- **No subprocess issues**: Avoids R's stdin limitations
+```r
+# Create server with multiple tools
+server <- mcp_http("Stats Server", "1.0.0", port = 8080)
+
+# Register existing R functions
+server$mcp_tool(
+  name = "t_test",
+  fn = t.test,
+  description = "Perform t-test"
+)
+
+server$mcp_tool(
+  name = "cor_test",
+  fn = cor.test,
+  description = "Correlation test"
+)
+
+# Start the server
+server$mcp_run()
+```
+
+### Using Decorators (Coming Soon)
+
+```r
+#* @mcp_tool
+#* @description Calculate summary statistics
+#* @param data A numeric vector
+calculate_stats <- function(data) {
+  list(mean = mean(data), sd = sd(data))
+}
+
+# Load decorated functions
+server <- mcp_http()
+server$source("analysis_functions.R")
+server$mcp_run(port = 8080)
+```
+
+## Deployment Options
+
+### Local Development
+Run the server locally for Claude Desktop:
+
+```r
+server <- mcp_http("My Server", "1.0.0")
+# ... add tools ...
+server$mcp_run(port = 8080)
+```
+
+### Production Deployment
+Deploy to production environments:
+
+```r
+# Configure for production
+server <- mcp_http(
+  name = "Production Server",
+  version = "1.0.0",
+  host = "0.0.0.0",  # Listen on all interfaces
+  port = 8080,
+  log_file = "mcp-server.log",
+  log_level = "info"
+)
+
+# Add authentication (coming soon)
+# server$use_auth(api_key = Sys.getenv("MCP_API_KEY"))
+
+server$mcp_run()
+```
+
+### Docker Deployment
+Create a Dockerfile for your MCP server:
+
+```dockerfile
+FROM rocker/r-ver:4.3.0
+RUN install.packages(c("mcpr", "plumber", "jsonlite"))
+COPY server.R /app/
+WORKDIR /app
+EXPOSE 8080
+CMD ["Rscript", "server.R"]
+```
 
 ## Current Implementation Status
 
@@ -175,28 +173,30 @@ mcp_hello_world_http(port = 8080)
   - S3/S4 objects
 - Basic MCP server object with builder pattern
 - Tool, resource, and prompt registration
-- stdio transport implementation
 - HTTP transport with plumber integration
 - JSON-RPC 2.0 protocol handling
-- Node.js wrapper template generation
-- Server package generation from code or configuration
 - Comprehensive test suite
-- Logging and error handling for HTTP servers
+- Logging and error handling
+- JSON serialization fixes for MCP compliance
 
 🚧 **In Progress**:
 - Decorator system for function annotations
 - WebSocket transport
 - Package scanning functionality
+- Authentication support
 
 📋 **Planned**:
 - Source file parsing with decorators
-- Integration examples
+- Advanced security features
 - Performance optimizations
-- Security features
+- Cloud deployment templates
 
-## Example Server
+## Example Servers
 
-See `inst/examples/basic-server.R` for a complete example of creating an MCP server with multiple tools and resources.
+See the `inst/examples/` directory for complete examples:
+- `basic-server.R` - Simple server with basic tools
+- `stats-server.R` - Statistical analysis tools
+- `data-server.R` - Data manipulation and visualization
 
 ## Development
 
@@ -210,7 +210,19 @@ To build documentation:
 
 ```r
 devtools::document()
+pkgdown::build_site()
 ```
+
+## Technical Notes
+
+### JSON Serialization
+When implementing MCP servers, mcpr handles proper JSON serialization including:
+- Automatic scalar unboxing for cleaner JSON
+- Protection of empty arrays to ensure they serialize as `[]` not `{}`
+- Proper handling of R's special values (NA, NULL, Inf)
+
+### Error Handling
+The HTTP transport provides clean error responses following the JSON-RPC 2.0 specification, making debugging easier compared to stdio transport.
 
 ## License
 
