@@ -61,13 +61,13 @@ Create the standard way for R developers to connect their code with AI assistant
   - Support for all MCP primitives (tools, resources, prompts, sampling)
 
 #### 4. Transport Layers (Issue #4)
-- **Priority**: HIGH for stdio, MEDIUM for others
+- **Priority**: HIGH for HTTP, MEDIUM for others
 - **Requirements**:
-  - **stdio** (Phase 1): For Claude Desktop integration
-    - MUST include Node.js wrapper for subprocess reliability
-    - R's stdin handling is broken in subprocess contexts
-    - Zero stderr output allowed (breaks connections)
-  - **HTTP+SSE** (Phase 2): For remote servers
+  - **HTTP** (Phase 1): Primary transport for reliability
+    - plumber-based implementation
+    - RESTful endpoints for MCP protocol
+    - Multi-client support out of the box
+  - **stdio** (Phase 2): For legacy compatibility if needed
   - **WebSocket** (Phase 3): For bidirectional communication
   - Clean abstraction for adding new transports
 
@@ -84,44 +84,45 @@ Create the standard way for R developers to connect their code with AI assistant
 
 #### Core API (Plumber-Inspired)
 ```r
-# Create MCP server (generates complete server package)
-mcp_create_server(
-  source = "my_functions.R",
-  output_dir = "my-mcp-server",
-  name = "my-server",
-  version = "1.0.0"
+# Create HTTP MCP server
+server <- mcp_http("My R Server", "1.0.0", port = 8080)
+
+# Register tools directly
+server$register_tool(
+  name = "calculate_stats",
+  fn = function(data) {
+    list(mean = mean(data), sd = sd(data))
+  },
+  description = "Calculate summary statistics"
 )
 
-# Alternative: Build server programmatically
-mcp() %>%
-  mcp_tool("name", function) %>%
-  mcp_resource("name", function) %>%
-  mcp_prompt("name", template) %>%
-  mcp_generate(output_dir = "server-package")
+# Start the server
+server$run()
 
-# Source from file with decorators
-mcp_create_server(
-  source = "tools.R",
-  output_dir = "tools-server"
-)
+# Alternative: Source from file with decorators
+server <- mcp_http()
+server$source("analysis_functions.R")
+server$run(port = 8080)
 
 # Expose package functions
-mcp_create_server(
-  package = "ggplot2", 
+server <- mcp_http("ggplot2 Server", "1.0.0")
+server$register_package(
+  "ggplot2", 
   include = c("ggplot", "geom_*"),
-  exclude = c("*.data"),
-  output_dir = "ggplot2-server"
+  exclude = c("*.data")
 )
+server$run()
 ```
 
-#### Generated Server Structure
-```
-my-mcp-server/
-├── package.json          # npm package definition
-├── index.js              # Node.js wrapper (auto-generated)
-├── server.R              # R MCP server (auto-generated)
-├── README.md             # Installation instructions
-└── mcp.json              # Example Claude Desktop config
+#### Claude Desktop Configuration
+```json
+{
+  "mcpServers": {
+    "r-analysis": {
+      "url": "http://localhost:8080/mcp"
+    }
+  }
+}
 ```
 
 #### Embedded Server Pattern
@@ -129,11 +130,10 @@ my-mcp-server/
 # In any R package
 #' Start MCP server for this package
 #' @export
-start_mcp_server <- function(transport = "stdio", port = NULL) {
-  mcp <- mcpr::mcp()
-  mcp %>%
-    mcp_source(system.file("mcp", "api.R", package = "mypackage")) %>%
-    mcp_run(transport = transport, port = port)
+start_mcp_server <- function(port = 8080) {
+  server <- mcpr::mcp_http("MyPackage", "1.0.0", port = port)
+  server$source(system.file("mcp", "api.R", package = "mypackage"))
+  server$run()
 }
 ```
 
@@ -142,43 +142,35 @@ start_mcp_server <- function(transport = "stdio", port = NULL) {
 mcpr/
 ├── R/
 │   ├── mcp.R              # Main MCP object and constructor
-│   ├── mcp-tool.R          # Tool registration methods
-│   ├── mcp-resource.R      # Resource registration methods
-│   ├── mcp-prompt.R        # Prompt template registration
-│   ├── mcp-source.R        # Source file parsing
-│   ├── mcp-package.R       # Package scanning
-│   ├── decorators.R        # Decorator parsing
-│   ├── json-rpc.R          # Protocol implementation
-│   ├── type-conversion.R   # R ↔ JSON conversion
-│   ├── transport-stdio.R   # stdio transport (with blocking stdin)
-│   ├── transport-http.R    # HTTP transport
-│   ├── server-generator.R  # Generate R server scripts
-│   ├── wrapper-generator.R # Generate Node.js wrappers
-│   └── utils.R             # Helper functions
+│   ├── mcp-tool.R         # Tool registration methods
+│   ├── mcp-resource.R     # Resource registration methods
+│   ├── mcp-prompt.R       # Prompt template registration
+│   ├── mcp-source.R       # Source file parsing
+│   ├── mcp-package.R      # Package scanning
+│   ├── decorators.R       # Decorator parsing
+│   ├── json-rpc.R         # Protocol implementation
+│   ├── type-conversion.R  # R ↔ JSON conversion
+│   ├── transport-http.R   # HTTP transport (primary)
+│   ├── transport-stdio.R  # stdio transport (optional)
+│   └── utils.R            # Helper functions
 ├── inst/
-│   ├── templates/          # Package templates
-│   │   ├── node-wrapper.js # Node.js wrapper template
-│   │   ├── server.R        # R server template
-│   │   ├── package.json    # npm package template
-│   │   └── README.md       # Installation guide template
-│   ├── bin/                # CLI tools
-│   │   └── mcpr            # Command line interface
-│   └── examples/           # Example servers
-│       ├── basic/          # Simple function exposure
-│       ├── data-analysis/  # Data analysis workflow
-│       └── package/        # Package exposure example
+│   ├── examples/          # Example servers
+│   │   ├── basic/         # Simple function exposure
+│   │   ├── data-analysis/ # Data analysis workflow
+│   │   └── package/       # Package exposure example
+│   └── templates/         # Server templates
+│       └── embedded/      # For package authors
 ├── tests/
 │   └── testthat/
 │       ├── test-type-conversion.R
 │       ├── test-decorators.R
 │       ├── test-json-rpc.R
-│       ├── test-transport.R
-│       ├── test-wrapper-generator.R
+│       ├── test-transport-http.R
 │       └── test-integration.R
 ├── vignettes/
 │   ├── getting-started.Rmd
 │   ├── embedding-servers.Rmd
-│   ├── subprocess-architecture.Rmd
+│   ├── http-deployment.Rmd
 │   └── mcp-protocol.Rmd
 ```
 
@@ -187,12 +179,11 @@ mcpr/
 Imports:
   jsonlite (>= 1.8.0),     # JSON parsing
   R6 (>= 2.5.0),           # OOP for decorators
-  later (>= 1.3.0),        # Async operations
-  processx (>= 3.5.0)      # Process management
+  plumber (>= 1.2.0),      # HTTP server
+  later (>= 1.3.0)         # Async operations
 
 Suggests:
-  plumber (>= 1.2.0),      # Inspiration and HTTP server
-  httpuv (>= 1.6.0),       # HTTP transport
+  httpuv (>= 1.6.0),       # Alternative HTTP backend
   httr2 (>= 1.0.0),        # HTTP client for testing
   testthat (>= 3.0.0),     # Testing framework
   withr (>= 2.5.0)         # Test helpers
@@ -209,7 +200,7 @@ Suggests:
 ### Security
 - Input validation for all exposed functions
 - Option to sandbox function execution
-- Authentication support (OAuth 2.1 for HTTP)
+- Authentication support (API keys, OAuth)
 - No automatic exposure of sensitive functions
 - Clear security documentation
 
@@ -232,32 +223,31 @@ Suggests:
 2. Basic MCP object and builders
 3. Decorator parser (Issue #2)
 4. Core protocol implementation (Issue #3)
-5. **Node.js wrapper generator** (Critical for stdio transport)
+5. HTTP transport with plumber
 
 ### Phase 2: Basic Functionality (Weeks 4-5)
-1. stdio transport with Node.js wrapper (Issue #4)
-2. Server generator (creates R + Node.js package)
-3. Simple tool/resource registration
-4. Basic examples demonstrating wrapper usage
-5. Initial test suite including subprocess tests
+1. Complete HTTP transport implementation
+2. Tool/resource/prompt registration
+3. Source file parsing
+4. Basic examples
+5. Initial test suite
 
 ### Phase 3: Advanced Features (Weeks 6-7)
 1. Package scanning functionality
-2. HTTP transport (may not need Node.js wrapper)
-3. CLI tools for server generation
-4. Comprehensive documentation including architecture
+2. Authentication mechanisms
+3. Performance optimizations
+4. Comprehensive documentation
 
 ### Phase 4: Polish (Week 8)
-1. Performance optimization
+1. Performance benchmarking
 2. Security review
 3. CRAN preparation
 4. Community feedback incorporation
-5. npm package publishing guidelines
 
 ## Success Metrics
 
 ### Technical Metrics
-- All 7 GitHub issues resolved
+- All core GitHub issues resolved
 - Test coverage >90%
 - CRAN acceptance on first submission
 - <100ms overhead per function call
@@ -271,7 +261,7 @@ Suggests:
 
 ## Example Use Cases
 
-### Use Case 1: Data Analysis Package
+### Use Case 1: Data Analysis Server
 A data scientist wants to expose their analysis functions to Claude:
 ```r
 # In analysis_functions.R with decorators
@@ -283,50 +273,41 @@ load_data <- function(path) { read.csv(path) }
 #* @description Clean missing values
 clean_data <- function(data) { na.omit(data) }
 
-# Generate server package
-mcp_create_server(
-  source = "analysis_functions.R",
-  output_dir = "analysis-server",
-  name = "analysis-tools"
-)
-
-# Install and use
-# cd analysis-server && npm install -g .
+# Start server
+server <- mcp_http("Analysis Tools", "1.0.0")
+server$source("analysis_functions.R")
+server$run(port = 8080)
 ```
 
 ### Use Case 2: Package Author Integration
 A package author wants to make ggplot2 functions available:
 ```r
 # Selective exposure of ggplot2
-mcp_create_server(
-  package = "ggplot2", 
+server <- mcp_http("ggplot2 Server", "1.0.0")
+server$register_package(
+  "ggplot2", 
   include = c("ggplot", "aes", "geom_*", "theme_*"),
-  exclude = c("*.data", "update_*"),
-  output_dir = "ggplot2-mcp-server",
-  name = "ggplot2-tools"
+  exclude = c("*.data", "update_*")
 )
-
-# Creates a complete npm package with:
-# - Node.js wrapper for subprocess handling
-# - Clean R server (no stderr output)
-# - Ready for npm install -g
+server$run(port = 8080)
 ```
 
 ### Use Case 3: Research Workflow
 A researcher wants to expose their entire workflow:
 ```r
 # Create server from directory of R files
-mcp_create_server(
-  source = "R/",  # Scans all .R files for @mcp_* decorators
-  output_dir = "research-mcp-server",
-  name = "research-tools",
-  prompts = list(
-    analyze_experiment = "Analyze {experiment_name} using {method}"
-  )
+server <- mcp_http("Research Tools", "1.0.0")
+
+# Scan all .R files for @mcp_* decorators
+server$source_dir("R/")
+
+# Add custom prompts
+server$register_prompt(
+  "analyze_experiment",
+  "Analyze {experiment_name} using {method}"
 )
 
-# Resulting server works reliably with Claude Desktop
-# thanks to Node.js wrapper handling subprocess issues
+server$run(port = 8080)
 ```
 
 ## Open Questions
@@ -340,14 +321,11 @@ mcp_create_server(
 ## Risks and Mitigations
 
 ### Technical Risks
-- **Risk**: R's subprocess stdin handling is fundamentally broken
-  - **Mitigation**: Mandatory Node.js wrapper layer for all servers
-  
-- **Risk**: R packages write to stderr, breaking MCP connections
-  - **Mitigation**: Node.js wrapper filters all stderr output
-  
 - **Risk**: R's single-threaded nature may limit concurrency
-  - **Mitigation**: Use future/promises for async operations
+  - **Mitigation**: Use future/promises for async operations, consider worker pools
+  
+- **Risk**: Large data transfers may be slow
+  - **Mitigation**: Implement streaming responses, compression options
   
 - **Risk**: Type conversion edge cases
   - **Mitigation**: Extensive testing, clear documentation of limitations
@@ -358,6 +336,21 @@ mcp_create_server(
   
 - **Risk**: Learning curve for decorators
   - **Mitigation**: Excellent documentation, similarity to plumber
+
+## Deployment Options
+
+### Local Development
+- Run HTTP server on localhost for Claude Desktop
+- Simple configuration with URL endpoint
+
+### Network Deployment
+- Deploy to internal network for team access
+- Use reverse proxy for security
+
+### Cloud Deployment
+- Deploy to cloud services (AWS, GCP, Azure)
+- Containerize with Docker for easy deployment
+- Use authentication for public endpoints
 
 ## Appendix
 
@@ -375,6 +368,6 @@ MCP is an open protocol that standardizes how AI assistants interact with extern
 
 ---
 
-*Document Version: 1.0*  
-*Date: 2025-06-18*  
+*Document Version: 2.0*  
+*Date: 2025-06-19*  
 *Author: mcpr Development Team*

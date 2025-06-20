@@ -59,19 +59,22 @@
 <h3 id="testing">Testing<a class="anchor" aria-label="anchor" href="#testing"></a></h3>
 <div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># Run all tests</span></span>
-<span><span class="fu">devtools</span><span class="fu">::</span><span class="fu">test</span><span class="op">(</span><span class="op">)</span></span>
+<span><span class="fu">devtools</span><span class="fu">::</span><span class="fu"><a href="https://devtools.r-lib.org/reference/test.html" class="external-link">test</a></span><span class="op">(</span><span class="op">)</span></span>
 <span></span>
 <span><span class="co"># Run specific test file</span></span>
-<span><span class="fu">devtools</span><span class="fu">::</span><span class="fu">test</span><span class="op">(</span>filter <span class="op">=</span> <span class="st">"test_name"</span><span class="op">)</span></span></code></pre></div>
+<span><span class="fu">devtools</span><span class="fu">::</span><span class="fu"><a href="https://devtools.r-lib.org/reference/test.html" class="external-link">test</a></span><span class="op">(</span>filter <span class="op">=</span> <span class="st">"test_name"</span><span class="op">)</span></span></code></pre></div>
 </div>
 <div class="section level3">
 <h3 id="documentation">Documentation<a class="anchor" aria-label="anchor" href="#documentation"></a></h3>
 <div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># Generate documentation from roxygen2 comments</span></span>
-<span><span class="fu">devtools</span><span class="fu">::</span><span class="fu">document</span><span class="op">(</span><span class="op">)</span></span>
+<span><span class="fu">devtools</span><span class="fu">::</span><span class="fu"><a href="https://devtools.r-lib.org/reference/document.html" class="external-link">document</a></span><span class="op">(</span><span class="op">)</span></span>
 <span></span>
 <span><span class="co"># Build vignettes</span></span>
-<span><span class="fu">devtools</span><span class="fu">::</span><span class="fu">build_vignettes</span><span class="op">(</span><span class="op">)</span></span></code></pre></div>
+<span><span class="fu">devtools</span><span class="fu">::</span><span class="fu"><a href="https://devtools.r-lib.org/reference/build_vignettes.html" class="external-link">build_vignettes</a></span><span class="op">(</span><span class="op">)</span></span>
+<span></span>
+<span><span class="co"># Build website for package</span></span>
+<span><span class="fu">pkgdown</span><span class="fu">::</span><span class="fu"><a href="https://pkgdown.r-lib.org/reference/build_site.html" class="external-link">build_site</a></span><span class="op">(</span>preview <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span></code></pre></div>
 </div>
 </div>
 <div class="section level2">
@@ -79,40 +82,32 @@
 <p>Our repo is chi2labs/mcpr</p>
 </div>
 <div class="section level2">
-<h2 id="mcp-server-implementation-lessons">MCP Server Implementation Lessons<a class="anchor" aria-label="anchor" href="#mcp-server-implementation-lessons"></a></h2>
+<h2 id="mcp-server-implementation">MCP Server Implementation<a class="anchor" aria-label="anchor" href="#mcp-server-implementation"></a></h2>
 <div class="section level3">
-<h3 id="key-requirements-for-r-mcp-servers">Key Requirements for R MCP Servers<a class="anchor" aria-label="anchor" href="#key-requirements-for-r-mcp-servers"></a></h3>
-<ol style="list-style-type: decimal"><li>
-<strong>No stderr output</strong>: R servers must not write ANY debug messages to stderr - this breaks Claude Desktop’s connection</li>
-<li>
-<strong>Use Node.js wrapper</strong>: R’s stdin handling doesn’t work reliably in subprocess contexts. Always wrap R servers with Node.js</li>
-<li>
-<strong>Clean JSON output</strong>: Ensure only valid JSON-RPC responses are written to stdout</li>
-<li>
-<strong>Blocking stdin</strong>: Use <code>file("stdin", open = "r", blocking = TRUE)</code> for reading input in R</li>
-</ol></div>
-<div class="section level3">
-<h3 id="working-example-structure">Working Example Structure<a class="anchor" aria-label="anchor" href="#working-example-structure"></a></h3>
-<pre><code>inst/bin/
-├── mcp-hello-world-clean.R    # Clean R implementation (no stderr output)
-├── mcp-wrapper-clean.js       # Node.js wrapper that spawns R process
-└── .mcp.json configuration:
-    {
-      "mcpServers": {
-        "r-hello": {
-          "command": "node",
-          "args": ["/path/to/mcp-wrapper-clean.js"]
-        }
-      }
-    }</code></pre>
+<h3 id="http-transport-recommended">HTTP Transport (Recommended)<a class="anchor" aria-label="anchor" href="#http-transport-recommended"></a></h3>
+<p>The mcpr package uses HTTP transport for reliable MCP server implementation. This approach: - Provides stable connections with Claude Desktop - Supports multiple concurrent clients - Enables easy testing with standard HTTP tools - Avoids stdin/stdout handling complexity</p>
 </div>
 <div class="section level3">
-<h3 id="common-pitfalls-to-avoid">Common Pitfalls to Avoid<a class="anchor" aria-label="anchor" href="#common-pitfalls-to-avoid"></a></h3>
-<ul><li>Don’t use <code>--quiet --slave</code> flags in shebang lines (invalid syntax)</li>
-<li>Don’t use <code>readLines(stdin())</code> directly - it returns EOF immediately in subprocesses</li>
-<li>Don’t output startup messages or debug info to stderr</li>
-<li>Ensure tools/resources are returned as proper objects/arrays in JSON responses</li>
-</ul></div>
+<h3 id="configuration-example">Configuration Example<a class="anchor" aria-label="anchor" href="#configuration-example"></a></h3>
+<div class="sourceCode" id="cb4"><pre class="sourceCode json"><code class="sourceCode json"><span id="cb4-1"><a href="#cb4-1" tabindex="-1"></a><span class="fu">{</span></span>
+<span id="cb4-2"><a href="#cb4-2" tabindex="-1"></a>  <span class="dt">"mcpServers"</span><span class="fu">:</span> <span class="fu">{</span></span>
+<span id="cb4-3"><a href="#cb4-3" tabindex="-1"></a>    <span class="dt">"r-server"</span><span class="fu">:</span> <span class="fu">{</span></span>
+<span id="cb4-4"><a href="#cb4-4" tabindex="-1"></a>      <span class="dt">"url"</span><span class="fu">:</span> <span class="st">"http://localhost:8080/mcp"</span></span>
+<span id="cb4-5"><a href="#cb4-5" tabindex="-1"></a>    <span class="fu">}</span></span>
+<span id="cb4-6"><a href="#cb4-6" tabindex="-1"></a>  <span class="fu">}</span></span>
+<span id="cb4-7"><a href="#cb4-7" tabindex="-1"></a><span class="fu">}</span></span></code></pre></div>
+</div>
+<div class="section level3">
+<h3 id="key-requirements">Key Requirements<a class="anchor" aria-label="anchor" href="#key-requirements"></a></h3>
+<ol style="list-style-type: decimal"><li>
+<strong>Clean JSON output</strong>: Ensure all responses follow the MCP protocol specification</li>
+<li>
+<strong>Proper error handling</strong>: Return appropriate JSON-RPC error responses</li>
+<li>
+<strong>Array serialization</strong>: Empty arrays must serialize as <code>[]</code> not <code><a href="https://rdrr.io/r/base/Paren.html" class="external-link">{}</a></code> when using auto_unbox</li>
+<li>
+<strong>HTTP endpoints</strong>: Implement <code>/mcp</code> for protocol, <code>/health</code> for monitoring</li>
+</ol></div>
 </div>
 </div>
 
@@ -125,7 +120,7 @@
 </div>
 
 <div class="pkgdown-footer-right">
-  <p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.1.3.</p>
+  <p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.1.1.</p>
 </div>
 
     </footer></div>

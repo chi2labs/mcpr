@@ -94,6 +94,7 @@ server$mcp_prompt(
 # Print server info
 print(server)
 
-# Run the server on stdio (for Claude Desktop)
-cat("\nStarting MCP server on stdio...\n")
-server$mcp_run(transport = "stdio")
+# Run the server on HTTP
+message("\nStarting MCP server on HTTP...")
+message("Server will be available at: http://localhost:8080/mcp")
+server$mcp_run(transport = "http", port = 8080)

@@ -52,7 +52,7 @@ Add the following to your Claude Desktop configuration file:
 ### Other MCP Clients
 
 This server implements the Model Context Protocol and can be used with any compatible MCP client.
-Start the server using one of the methods above and configure your client to connect via stdio.
+Start the server using one of the methods above and configure your client to connect via HTTP.
 
 ## Available Tools
 

@@ -256,6 +256,140 @@ const filterPatterns = [
 ];
 ```
 
+## HTTP Transport (New!)
+
+As of version 0.1.0, mcpr supports HTTP transport as an alternative to stdio. HTTP transport offers several advantages:
+
+- **Multiple concurrent clients**: Unlike stdio which is limited to one client, HTTP servers can handle multiple connections
+- **Easier debugging**: Use standard HTTP tools like curl or Postman
+- **Better deployment options**: Deploy to cloud platforms, containers, or behind load balancers
+- **No subprocess complexity**: Avoids R's stdin handling limitations
+
+### Creating an HTTP Server
+
+```r
+# Using the convenience function
+server <- mcp_http(
+  name = "My HTTP Server",
+  version = "1.0.0",
+  host = "127.0.0.1",
+  port = 8080
+)
+
+# Add tools, resources, and prompts as usual
+server$mcp_tool(
+  name = "analyze",
+  fn = function(data) { summary(as.numeric(strsplit(data, ",")[[1]])) },
+  description = "Analyze comma-separated numbers"
+)
+
+# Start the server
+server$mcp_run()  # Automatically uses HTTP transport
+```
+
+### Quick Start with HTTP
+
+```r
+# Start a hello world HTTP server
+mcp_hello_world_http(port = 8080)
+
+# Test it with curl
+# curl -X POST http://localhost:8080/mcp \
+#   -H "Content-Type: application/json" \
+#   -d '{"jsonrpc":"2.0","method":"tools/list","id":1}'
+```
+
+### HTTP Server Features
+
+1. **Built-in endpoints**:
+   - `POST /mcp` - Main MCP protocol endpoint
+   - `GET /health` - Health check endpoint
+   - `GET /` - Server information
+
+2. **Logging support**:
+   ```r
+   server <- mcp_http(
+     name = "Logged Server",
+     log_file = "server.log",
+     log_level = "debug"  # debug, info, warn, error
+   )
+   ```
+
+3. **Swagger documentation** (when enabled):
+   ```r
+   server$mcp_run(docs = TRUE)
+   # Visit http://localhost:8080/__docs__
+   ```
+
+### Migrating from STDIO to HTTP
+
+```r
+# Before (stdio)
+server <- mcp(name = "My Server")
+# ... add tools ...
+server$mcp_run(transport = "stdio")
+
+# After (HTTP)
+server <- mcp(name = "My Server")
+# ... add tools ...
+server$mcp_run(transport = "http", port = 8080)
+```
+
+### Using with Claude Desktop
+
+For Claude Desktop configuration with HTTP servers:
+
+```json
+{
+  "mcpServers": {
+    "my-http-server": {
+      "command": "Rscript",
+      "args": ["-e", "library(mcpr); server <- mcp_http('My Server'); server$mcp_tool('hello', function(name='World') paste('Hello', name)); server$mcp_run()"]
+    }
+  }
+}
+```
+
+Or create a script file:
+
+```r
+# my-server.R
+library(mcpr)
+server <- mcp_http("My Server", port = 8080)
+# Add your tools here
+server$mcp_run()
+```
+
+```json
+{
+  "mcpServers": {
+    "my-http-server": {
+      "command": "Rscript",
+      "args": ["path/to/my-server.R"]
+    }
+  }
+}
+```
+
+### Deployment Options
+
+HTTP servers can be deployed to:
+
+1. **Local development**: Run on localhost for testing
+2. **Docker containers**: Package your server as a container
+3. **Cloud platforms**: Deploy to Heroku, Google Cloud Run, etc.
+4. **Posit Connect**: Deploy R-based HTTP APIs
+5. **Corporate networks**: Run behind firewalls with proper authentication
+
+### Security Considerations
+
+When deploying HTTP servers:
+
+1. **Authentication**: The MCP spec requires OAuth 2.1 for remote servers
+2. **HTTPS**: Use TLS encryption for production deployments
+3. **Rate limiting**: Implement rate limiting for public endpoints
+4. **CORS**: Configure CORS policies appropriately
+
 ## Troubleshooting
 
 ### Common Issues
