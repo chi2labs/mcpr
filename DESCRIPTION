@@ -1,6 +1,6 @@
 Package: mcpr
 Title: Model Context Protocol for R
-Version: 0.0.0.9000
+Version: 0.9.0
 Authors@R: 
     person("Aleksander", "Dietrichson", , "dietrichson@chi2labs.com", role = c("aut", "cre"))
 Description: Expose R functions, R resources or  entire packages through the Model
