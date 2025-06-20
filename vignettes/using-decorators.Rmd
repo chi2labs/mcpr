@@ -1,0 +1,389 @@
+---
+title: "Using Decorators in mcpr"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Using Decorators in mcpr}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>"
+)
+```
+
+```{r setup}
+library(mcpr)
+```
+
+## Introduction
+
+The mcpr package provides a decorator system similar to plumber for defining MCP (Model Context Protocol) servers. Decorators allow you to annotate R functions with special comments that describe how they should be exposed through MCP. This approach is particularly useful when you have existing R code that you want to make available to AI assistants like Claude.
+
+## Decorator Syntax
+
+Decorators in mcpr use the `#*` prefix (similar to plumber) followed by decorator tags. The basic structure is:
+
+```r
+#* @decorator_type
+#* @tag value
+#* @another_tag another value
+function_name <- function(parameters) {
+  # Function implementation
+}
+```
+
+## Available Decorators
+
+### @mcp_tool
+
+The `@mcp_tool` decorator exposes a function as an MCP tool that can be called by AI assistants.
+
+```r
+#* @mcp_tool
+#* @description Calculate the mean of a numeric vector
+#* @param x numeric vector to analyze
+#* @param na.rm logical whether to remove NA values (default: TRUE)
+calculate_mean <- function(x, na.rm = TRUE) {
+  mean(x, na.rm = na.rm)
+}
+```
+
+**Required tags:**
+- `@description` - A clear description of what the tool does
+
+**Optional tags:**
+- `@param` - Parameter documentation (format: `@param name description`)
+- `@returns` - Description of the return value
+
+### @mcp_resource
+
+The `@mcp_resource` decorator exposes a function as an MCP resource that provides data or information.
+
+```r
+#* @mcp_resource
+#* @description Get system information
+#* @mime_type application/json
+get_system_info <- function() {
+  list(
+    r_version = R.version.string,
+    platform = R.version$platform,
+    locale = Sys.getlocale(),
+    timezone = Sys.timezone()
+  )
+}
+```
+
+**Required tags:**
+- `@description` - Description of the resource
+
+**Optional tags:**
+- `@mime_type` - MIME type of the resource (default: "application/json")
+
+### @mcp_prompt
+
+The `@mcp_prompt` decorator defines a prompt template that AI assistants can use.
+
+```r
+#* @mcp_prompt
+#* @description Generate a data analysis report
+#* @template Analyze the {{dataset}} using {{method}} and focus on {{aspect}}. 
+#*   Provide visualizations and statistical insights.
+#* @param_dataset The dataset to analyze
+#* @param_method The analysis method (e.g., "regression", "clustering")
+#* @param_aspect The aspect to focus on (e.g., "trends", "outliers")
+data_analysis_prompt <- NULL
+```
+
+**Required tags:**
+- `@description` - Description of the prompt
+- `@template` - The prompt template with {{parameter}} placeholders
+
+**Optional tags:**
+- `@param_*` - Parameter descriptions (format: `@param_name description`)
+
+## Parameter Type Annotations
+
+You can specify parameter types in the `@param` documentation:
+
+```r
+#* @mcp_tool
+#* @description Perform statistical analysis
+#* @param data numeric vector or data.frame to analyze
+#* @param method character analysis method ("mean", "median", "sd")
+#* @param conf.level numeric confidence level (0-1)
+#* @param plot logical whether to create a plot
+analyze_data <- function(data, method = "mean", conf.level = 0.95, plot = FALSE) {
+  # Implementation
+}
+```
+
+### Type Mappings
+
+mcpr automatically maps R types to JSON Schema types:
+
+| R Type | JSON Schema Type | Example |
+|--------|------------------|---------|
+| numeric | number | `@param x numeric values` |
+| integer | integer | `@param n integer count` |
+| character | string | `@param name character string` |
+| logical | boolean | `@param flag logical TRUE/FALSE` |
+| list | object | `@param options list of settings` |
+| data.frame | array | `@param df data.frame dataset` |
+
+## Using Decorated Functions
+
+### Loading from a File
+
+Use the `mcp_source()` method to load decorated functions:
+
+```r
+# Create a server
+server <- mcp(name = "My Analysis Server", version = "1.0.0")
+
+# Load decorated functions from a file
+server$mcp_source("analysis-tools.R")
+
+# Run the server
+server$mcp_run(transport = "http", port = 8080)
+```
+
+### Loading from a Directory
+
+Use `mcp_source_directory()` to load all R files with decorators:
+
+```r
+# Load all decorated functions from a directory
+server$mcp_source_directory("R/", recursive = TRUE)
+```
+
+### Scanning for Decorated Files
+
+Use `scan_mcp_directory()` to find files containing MCP decorators:
+
+```r
+# Find all files with MCP decorators
+decorated_files <- scan_mcp_directory("R/")
+print(decorated_files)
+```
+
+## Complete Example
+
+Here's a complete example file with various decorator types:
+
+```r
+# statistics-tools.R
+
+#* @mcp_tool
+#* @description Calculate descriptive statistics for a numeric vector
+#* @param x numeric vector to analyze
+#* @param na.rm logical whether to remove NA values (default: TRUE)
+#* @param digits integer number of decimal places (default: 2)
+describe <- function(x, na.rm = TRUE, digits = 2) {
+  if (!is.numeric(x)) {
+    stop("x must be numeric")
+  }
+  
+  stats <- list(
+    n = length(x),
+    mean = mean(x, na.rm = na.rm),
+    median = median(x, na.rm = na.rm),
+    sd = sd(x, na.rm = na.rm),
+    min = min(x, na.rm = na.rm),
+    max = max(x, na.rm = na.rm),
+    q1 = quantile(x, 0.25, na.rm = na.rm),
+    q3 = quantile(x, 0.75, na.rm = na.rm)
+  )
+  
+  # Round to specified digits
+  lapply(stats, round, digits = digits)
+}
+
+#* @mcp_tool
+#* @description Create a frequency table for categorical data
+#* @param x character or factor vector
+#* @param sort logical whether to sort by frequency (default: TRUE)
+#* @param prop logical whether to include proportions (default: TRUE)
+frequency_table <- function(x, sort = TRUE, prop = TRUE) {
+  tbl <- table(x)
+  
+  if (sort) {
+    tbl <- sort(tbl, decreasing = TRUE)
+  }
+  
+  result <- data.frame(
+    value = names(tbl),
+    count = as.numeric(tbl),
+    stringsAsFactors = FALSE
+  )
+  
+  if (prop) {
+    result$proportion <- result$count / sum(result$count)
+    result$percentage <- round(result$proportion * 100, 1)
+  }
+  
+  result
+}
+
+#* @mcp_resource
+#* @description Get available example datasets
+#* @mime_type application/json
+list_example_datasets <- function() {
+  # Get datasets from base R
+  data_list <- data(package = "datasets")$results
+  
+  datasets <- data.frame(
+    name = data_list[, "Item"],
+    title = data_list[, "Title"],
+    stringsAsFactors = FALSE
+  )
+  
+  # Add some metadata
+  datasets$rows <- NA
+  datasets$cols <- NA
+  datasets$class <- NA
+  
+  for (i in 1:nrow(datasets)) {
+    dataset_name <- datasets$name[i]
+    if (exists(dataset_name)) {
+      obj <- get(dataset_name)
+      if (is.data.frame(obj) || is.matrix(obj)) {
+        datasets$rows[i] <- nrow(obj)
+        datasets$cols[i] <- ncol(obj)
+      }
+      datasets$class[i] <- class(obj)[1]
+    }
+  }
+  
+  datasets
+}
+
+#* @mcp_resource
+#* @description Load an example dataset
+#* @mime_type application/json
+load_dataset <- function(name) {
+  if (!exists(name)) {
+    stop(paste("Dataset", name, "not found"))
+  }
+  
+  dataset <- get(name)
+  
+  # Convert to list format for JSON serialization
+  if (is.data.frame(dataset)) {
+    return(as.list(dataset))
+  } else if (is.matrix(dataset)) {
+    return(list(data = dataset, dim = dim(dataset)))
+  } else {
+    return(dataset)
+  }
+}
+
+#* @mcp_prompt
+#* @description Request a statistical analysis
+#* @template Please analyze the {{dataset}} dataset focusing on {{variables}}.
+#*   Use {{methods}} and provide {{outputs}}.
+#*   
+#*   Additional requirements: {{requirements}}
+#* @param_dataset The name of the dataset to analyze
+#* @param_variables The variables to focus on (comma-separated)
+#* @param_methods The statistical methods to apply
+#* @param_outputs The desired outputs (e.g., "summary statistics, plots, tests")
+#* @param_requirements Any additional analysis requirements
+statistical_analysis_request <- NULL
+
+#* @mcp_prompt
+#* @description Request a data visualization
+#* @template Create a {{plot_type}} visualization for the {{dataset}} dataset.
+#*   Show the relationship between {{x_var}} and {{y_var}}.
+#*   {{additional_instructions}}
+#* @param_plot_type The type of plot (e.g., "scatter", "bar", "histogram")
+#* @param_dataset The dataset to visualize
+#* @param_x_var The x-axis variable
+#* @param_y_var The y-axis variable (if applicable)
+#* @param_additional_instructions Any additional plotting instructions
+visualization_request <- NULL
+```
+
+## Best Practices
+
+1. **Clear Descriptions**: Always provide clear, concise descriptions for your decorators
+2. **Parameter Documentation**: Document all parameters with their expected types
+3. **Error Handling**: Include appropriate error handling in your functions
+4. **Return Values**: Ensure your functions return JSON-serializable objects
+5. **Naming Conventions**: Use descriptive, consistent names for your functions
+
+## Advanced Features
+
+### Multi-line Descriptions
+
+Use indentation for multi-line descriptions:
+
+```r
+#* @mcp_tool
+#* @description Perform comprehensive statistical analysis including:
+#*   - Descriptive statistics
+#*   - Normality tests
+#*   - Correlation analysis
+#*   - Basic visualizations
+comprehensive_analysis <- function(data) {
+  # Implementation
+}
+```
+
+### Excluding Functions
+
+While there's no `@mcp_ignore` decorator yet, you can simply not decorate functions you don't want to expose:
+
+```r
+# This function will be exposed
+#* @mcp_tool
+#* @description Public analysis function
+analyze_public <- function(data) {
+  process_internal(data)
+}
+
+# This function will NOT be exposed (no decorator)
+process_internal <- function(data) {
+  # Internal processing
+}
+```
+
+## Integration with Server Generation
+
+Decorated functions work seamlessly with mcpr's server generation features:
+
+```r
+# Generate a standalone server from decorated files
+generate_mcp_server(
+  name = "stats-server",
+  source = "statistics-tools.R",
+  output_dir = "./servers"
+)
+```
+
+## Troubleshooting
+
+### Common Issues
+
+1. **Functions not appearing**: Ensure you're using `#*` (not just `#`) for decorators
+2. **Parameter types not recognized**: Check that parameter names in `@param` match function arguments
+3. **JSON serialization errors**: Ensure return values are JSON-serializable
+4. **File not loading**: Verify the file path and that the file contains valid R code
+
+### Debugging
+
+To see parsed decorator information:
+
+```r
+# Parse decorators without registering
+parsed <- parse_mcp_decorators("my-file.R")
+str(parsed)
+```
+
+## Conclusion
+
+The decorator system in mcpr provides a clean, intuitive way to expose R functions through MCP. By using familiar roxygen2-style comments, you can quickly make your R code available to AI assistants while maintaining readable, well-documented code.
+
+For more examples, see the `inst/examples/decorated-functions.R` file in the mcpr package.
