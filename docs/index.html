@@ -11,8 +11,8 @@
 <script src="deps/bootstrap-5.3.1/bootstrap.bundle.min.js"></script><link href="deps/font-awesome-6.5.2/css/all.min.css" rel="stylesheet">
 <link href="deps/font-awesome-6.5.2/css/v4-shims.min.css" rel="stylesheet">
 <script src="deps/headroom-0.11.0/headroom.min.js"></script><script src="deps/headroom-0.11.0/jQuery.headroom.min.js"></script><script src="deps/bootstrap-toc-1.0.1/bootstrap-toc.min.js"></script><script src="deps/clipboard.js-2.0.11/clipboard.min.js"></script><script src="deps/search-1.0.0/autocomplete.jquery.min.js"></script><script src="deps/search-1.0.0/fuse.min.js"></script><script src="deps/search-1.0.0/mark.min.js"></script><!-- pkgdown --><script src="pkgdown.js"></script><meta property="og:title" content="Model Context Protocol for R">
-<meta name="description" content="Expose R functions, files, or entire packages through the Model Context Protocol (MCP). This package provides a simple, decorator-based system for creating MCP servers that integrate with AI assistants like Claude Desktop. Following patterns established by plumber, mcpr makes it easy to connect R code with large language models.">
-<meta property="og:description" content="Expose R functions, files, or entire packages through the Model Context Protocol (MCP). This package provides a simple, decorator-based system for creating MCP servers that integrate with AI assistants like Claude Desktop. Following patterns established by plumber, mcpr makes it easy to connect R code with large language models.">
+<meta name="description" content="Expose R functions, R resources or entire packages through the Model Context Protocol (MCP). This package provides a simple, decorator-based system for creating MCP servers that integrate with AI assistants like Claude Desktop. Following patterns established by plumber, mcpr makes it easy to connect R code with large language models.">
+<meta property="og:description" content="Expose R functions, R resources or entire packages through the Model Context Protocol (MCP). This package provides a simple, decorator-based system for creating MCP servers that integrate with AI assistants like Claude Desktop. Following patterns established by plumber, mcpr makes it easy to connect R code with large language models.">
 </head>
 <body>
     <a href="#main" class="visually-hidden-focusable">Skip to contents</a>
@@ -36,6 +36,7 @@
   <button class="nav-link dropdown-toggle" type="button" id="dropdown-articles" data-bs-toggle="dropdown" aria-expanded="false" aria-haspopup="true">Articles</button>
   <ul class="dropdown-menu" aria-labelledby="dropdown-articles">
 <li><a class="dropdown-item" href="articles/creating-servers.html">Creating MCP Servers with mcpr</a></li>
+    <li><a class="dropdown-item" href="articles/using-decorators.html">Using Decorators in mcpr</a></li>
   </ul>
 </li>
       </ul>
@@ -68,6 +69,9 @@
 <div class="section level2">
 <h2 id="basic-usage">Basic Usage<a class="anchor" aria-label="anchor" href="#basic-usage"></a>
 </h2>
+<div class="section level3">
+<h3 id="method-1-programmatic-api">Method 1: Programmatic API<a class="anchor" aria-label="anchor" href="#method-1-programmatic-api"></a>
+</h3>
 <p>Create a simple MCP server with tools and resources:</p>
 <div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://github.com/chi2labs/mcpr" class="external-link">mcpr</a></span><span class="op">)</span></span>
@@ -89,21 +93,78 @@
 <span>  description <span class="op">=</span> <span class="st">"Server information"</span></span>
 <span><span class="op">)</span></span>
 <span></span>
-<span><span class="co"># Run the server</span></span>
-<span><span class="va">server</span><span class="op">$</span><span class="fu">mcp_run</span><span class="op">(</span><span class="op">)</span></span></code></pre></div>
+<span></span>
+<span><span class="co"># Run the server with HTTP transport (recommended)</span></span>
+<span><span class="va">server</span><span class="op">$</span><span class="fu">mcp_run</span><span class="op">(</span>transport <span class="op">=</span> <span class="st">"http"</span>, port <span class="op">=</span> <span class="fl">8080</span><span class="op">)</span></span></code></pre></div>
 </div>
-<div class="section level2">
-<h2 id="configure-claude-desktop">Configure Claude Desktop<a class="anchor" aria-label="anchor" href="#configure-claude-desktop"></a>
-</h2>
-<p>Add your server to Claude Desktop’s configuration:</p>
-<div class="sourceCode" id="cb3"><pre class="sourceCode json"><code class="sourceCode json"><span id="cb3-1"><a href="#cb3-1" tabindex="-1"></a><span class="fu">{</span></span>
-<span id="cb3-2"><a href="#cb3-2" tabindex="-1"></a>  <span class="dt">"mcpServers"</span><span class="fu">:</span> <span class="fu">{</span></span>
-<span id="cb3-3"><a href="#cb3-3" tabindex="-1"></a>    <span class="dt">"r-analysis"</span><span class="fu">:</span> <span class="fu">{</span></span>
-<span id="cb3-4"><a href="#cb3-4" tabindex="-1"></a>      <span class="dt">"url"</span><span class="fu">:</span> <span class="st">"http://localhost:8080/mcp"</span></span>
-<span id="cb3-5"><a href="#cb3-5" tabindex="-1"></a>    <span class="fu">}</span></span>
-<span id="cb3-6"><a href="#cb3-6" tabindex="-1"></a>  <span class="fu">}</span></span>
-<span id="cb3-7"><a href="#cb3-7" tabindex="-1"></a><span class="fu">}</span></span></code></pre></div>
+<div class="section level3">
+<h3 id="method-2-decorator-syntax">Method 2: Decorator Syntax<a class="anchor" aria-label="anchor" href="#method-2-decorator-syntax"></a>
+</h3>
+<p>Use plumber-style decorators to define MCP tools, resources, and prompts:</p>
+<div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="co"># Create a file: analysis-tools.R</span></span>
+<span><span class="co">#* @mcp_tool</span></span>
+<span><span class="co">#* @description Calculate summary statistics for a numeric vector</span></span>
+<span><span class="co">#* @param x numeric vector to analyze</span></span>
+<span><span class="co">#* @param na.rm logical whether to remove NA values (default: TRUE)</span></span>
+<span><span class="va">calculate_stats</span> <span class="op">&lt;-</span> <span class="kw">function</span><span class="op">(</span><span class="va">x</span>, <span class="va">na.rm</span> <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span> <span class="op">{</span></span>
+<span>  <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span></span>
+<span>    mean <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/mean.html" class="external-link">mean</a></span><span class="op">(</span><span class="va">x</span>, na.rm <span class="op">=</span> <span class="va">na.rm</span><span class="op">)</span>,</span>
+<span>    median <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/stats/median.html" class="external-link">median</a></span><span class="op">(</span><span class="va">x</span>, na.rm <span class="op">=</span> <span class="va">na.rm</span><span class="op">)</span>,</span>
+<span>    sd <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/stats/sd.html" class="external-link">sd</a></span><span class="op">(</span><span class="va">x</span>, na.rm <span class="op">=</span> <span class="va">na.rm</span><span class="op">)</span>,</span>
+<span>    min <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/Extremes.html" class="external-link">min</a></span><span class="op">(</span><span class="va">x</span>, na.rm <span class="op">=</span> <span class="va">na.rm</span><span class="op">)</span>,</span>
+<span>    max <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/Extremes.html" class="external-link">max</a></span><span class="op">(</span><span class="va">x</span>, na.rm <span class="op">=</span> <span class="va">na.rm</span><span class="op">)</span></span>
+<span>  <span class="op">)</span></span>
+<span><span class="op">}</span></span>
+<span></span>
+<span><span class="co">#* @mcp_resource</span></span>
+<span><span class="co">#* @description List available datasets</span></span>
+<span><span class="co">#* @mime_type application/json</span></span>
+<span><span class="va">list_datasets</span> <span class="op">&lt;-</span> <span class="kw">function</span><span class="op">(</span><span class="op">)</span> <span class="op">{</span></span>
+<span>  <span class="fu"><a href="https://rdrr.io/r/utils/data.html" class="external-link">data</a></span><span class="op">(</span>package <span class="op">=</span> <span class="st">"datasets"</span><span class="op">)</span><span class="op">$</span><span class="va">results</span><span class="op">[</span>, <span class="st">"Item"</span><span class="op">]</span></span>
+<span><span class="op">}</span></span>
+<span></span>
+<span><span class="co">#* @mcp_prompt</span></span>
+<span><span class="co">#* @description Request statistical analysis</span></span>
+<span><span class="co">#* @template Analyze the {{dataset}} dataset using {{method}} and provide insights about {{focus}}</span></span>
+<span><span class="co">#* @param_dataset The dataset to analyze</span></span>
+<span><span class="co">#* @param_method The analysis method to use</span></span>
+<span><span class="co">#* @param_focus The aspect to focus on</span></span>
+<span><span class="va">statistical_analysis_prompt</span> <span class="op">&lt;-</span> <span class="cn">NULL</span></span></code></pre></div>
+<p>Load decorated functions into a server:</p>
+<div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="co"># Create server and load decorated functions</span></span>
+<span><span class="va">server</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/mcp.html">mcp</a></span><span class="op">(</span>name <span class="op">=</span> <span class="st">"Analysis Server"</span>, version <span class="op">=</span> <span class="st">"1.0.0"</span><span class="op">)</span></span>
+<span><span class="va">server</span><span class="op">$</span><span class="fu">mcp_source</span><span class="op">(</span><span class="st">"analysis-tools.R"</span><span class="op">)</span></span>
+<span></span>
+<span><span class="co"># Run with HTTP transport</span></span>
+<span><span class="va">server</span><span class="op">$</span><span class="fu">mcp_run</span><span class="op">(</span>transport <span class="op">=</span> <span class="st">"http"</span>, port <span class="op">=</span> <span class="fl">8080</span><span class="op">)</span></span></code></pre></div>
+<p>See the complete example at <code>inst/examples/decorated-functions.R</code>.</p>
 </div>
+</div>
+</div>
+<div class="section level1">
+<h1 id="id_-generating-standalone-mcp-servers">## Generating Standalone MCP Servers<a class="anchor" aria-label="anchor" href="#id_-generating-standalone-mcp-servers"></a>
+</h1>
+</div>
+<div class="section level1">
+<h1 id="run-the-server">Run the server<a class="anchor" aria-label="anchor" href="#run-the-server"></a>
+</h1>
+<p>server$mcp_run()</p>
+<pre><code>
+## Configure Claude Desktop
+
+
+Add your server to Claude Desktop's configuration:
+
+```json
+{
+  "mcpServers": {
+    "r-analysis": {
+      "url": "http://localhost:8080/mcp"
+    }
+  }
+}</code></pre>
 <div class="section level2">
 <h2 id="http-transport">HTTP Transport<a class="anchor" aria-label="anchor" href="#http-transport"></a>
 </h2>
@@ -123,7 +184,7 @@
 <div class="section level3">
 <h3 id="quick-start">Quick Start<a class="anchor" aria-label="anchor" href="#quick-start"></a>
 </h3>
-<div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># Start a hello world HTTP server</span></span>
 <span><span class="fu"><a href="reference/mcp_hello_world_http.html">mcp_hello_world_http</a></span><span class="op">(</span>port <span class="op">=</span> <span class="fl">8080</span><span class="op">)</span></span>
 <span></span>
@@ -135,7 +196,7 @@
 <div class="section level3">
 <h3 id="creating-servers-from-functions">Creating Servers from Functions<a class="anchor" aria-label="anchor" href="#creating-servers-from-functions"></a>
 </h3>
-<div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># Create server with multiple tools</span></span>
 <span><span class="va">server</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/mcp_http.html">mcp_http</a></span><span class="op">(</span><span class="st">"Stats Server"</span>, <span class="st">"1.0.0"</span>, port <span class="op">=</span> <span class="fl">8080</span><span class="op">)</span></span>
 <span></span>
@@ -158,7 +219,7 @@
 <div class="section level3">
 <h3 id="using-decorators-coming-soon">Using Decorators (Coming Soon)<a class="anchor" aria-label="anchor" href="#using-decorators-coming-soon"></a>
 </h3>
-<div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co">#* @mcp_tool</span></span>
 <span><span class="co">#* @description Calculate summary statistics</span></span>
 <span><span class="co">#* @param data A numeric vector</span></span>
@@ -179,7 +240,7 @@
 <h3 id="local-development">Local Development<a class="anchor" aria-label="anchor" href="#local-development"></a>
 </h3>
 <p>Run the server locally for Claude Desktop:</p>
-<div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">server</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/mcp_http.html">mcp_http</a></span><span class="op">(</span><span class="st">"My Server"</span>, <span class="st">"1.0.0"</span><span class="op">)</span></span>
 <span><span class="co"># ... add tools ...</span></span>
 <span><span class="va">server</span><span class="op">$</span><span class="fu">mcp_run</span><span class="op">(</span>port <span class="op">=</span> <span class="fl">8080</span><span class="op">)</span></span></code></pre></div>
@@ -188,7 +249,7 @@
 <h3 id="production-deployment">Production Deployment<a class="anchor" aria-label="anchor" href="#production-deployment"></a>
 </h3>
 <p>Deploy to production environments:</p>
-<div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb10"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># Configure for production</span></span>
 <span><span class="va">server</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/mcp_http.html">mcp_http</a></span><span class="op">(</span></span>
 <span>  name <span class="op">=</span> <span class="st">"Production Server"</span>,</span>
@@ -208,20 +269,13 @@
 <h3 id="docker-deployment">Docker Deployment<a class="anchor" aria-label="anchor" href="#docker-deployment"></a>
 </h3>
 <p>Create a Dockerfile for your MCP server:</p>
-<div class="sourceCode" id="cb9"><pre class="sourceCode dockerfile"><code class="sourceCode dockerfile"><span id="cb9-1"><a href="#cb9-1" tabindex="-1"></a><span class="kw">FROM</span> rocker/r-ver:4.3.0</span>
-<span id="cb9-2"><a href="#cb9-2" tabindex="-1"></a><span class="kw">RUN</span> <span class="ex">install.packages</span><span class="er">(</span><span class="ex">c</span><span class="er">(</span><span class="st">"mcpr"</span><span class="ex">,</span> <span class="st">"plumber"</span>, <span class="st">"jsonlite"</span><span class="kw">))</span></span>
-<span id="cb9-3"><a href="#cb9-3" tabindex="-1"></a><span class="kw">COPY</span> server.R /app/</span>
-<span id="cb9-4"><a href="#cb9-4" tabindex="-1"></a><span class="kw">WORKDIR</span> /app</span>
-<span id="cb9-5"><a href="#cb9-5" tabindex="-1"></a><span class="kw">EXPOSE</span> 8080</span>
-<span id="cb9-6"><a href="#cb9-6" tabindex="-1"></a><span class="kw">CMD</span> [<span class="st">"Rscript"</span>, <span class="st">"server.R"</span>]</span></code></pre></div>
+<div class="sourceCode" id="cb11"><pre class="sourceCode dockerfile"><code class="sourceCode dockerfile"><span id="cb11-1"><a href="#cb11-1" tabindex="-1"></a><span class="kw">FROM</span> rocker/r-ver:4.3.0</span>
+<span id="cb11-2"><a href="#cb11-2" tabindex="-1"></a><span class="kw">RUN</span> <span class="ex">install.packages</span><span class="er">(</span><span class="ex">c</span><span class="er">(</span><span class="st">"mcpr"</span><span class="ex">,</span> <span class="st">"plumber"</span>, <span class="st">"jsonlite"</span><span class="kw">))</span></span>
+<span id="cb11-3"><a href="#cb11-3" tabindex="-1"></a><span class="kw">COPY</span> server.R /app/</span>
+<span id="cb11-4"><a href="#cb11-4" tabindex="-1"></a><span class="kw">WORKDIR</span> /app</span>
+<span id="cb11-5"><a href="#cb11-5" tabindex="-1"></a><span class="kw">EXPOSE</span> 8080</span>
+<span id="cb11-6"><a href="#cb11-6" tabindex="-1"></a><span class="kw">CMD</span> [<span class="st">"Rscript"</span>, <span class="st">"server.R"</span>]</span></code></pre></div>
 </div>
-</div>
-<div class="section level2">
-<h2 id="current-implementation-status">Current Implementation Status<a class="anchor" aria-label="anchor" href="#current-implementation-status"></a>
-</h2>
-<p>✅ <strong>Completed</strong>: - Type conversion system (R ↔︎ JSON) with comprehensive support for: - Atomic types (numeric, character, logical) - Vectors and matrices - Data frames and factors - Lists and arrays - S3/S4 objects - Basic MCP server object with builder pattern - Tool, resource, and prompt registration - HTTP transport with plumber integration - JSON-RPC 2.0 protocol handling - Comprehensive test suite - Logging and error handling - JSON serialization fixes for MCP compliance</p>
-<p>🚧 <strong>In Progress</strong>: - Decorator system for function annotations - WebSocket transport - Package scanning functionality - Authentication support</p>
-<p>📋 <strong>Planned</strong>: - Source file parsing with decorators - Advanced security features - Performance optimizations - Cloud deployment templates</p>
 </div>
 <div class="section level2">
 <h2 id="example-servers">Example Servers<a class="anchor" aria-label="anchor" href="#example-servers"></a>
@@ -232,10 +286,10 @@
 <h2 id="development">Development<a class="anchor" aria-label="anchor" href="#development"></a>
 </h2>
 <p>To run tests:</p>
-<div class="sourceCode" id="cb10"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb12"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu">devtools</span><span class="fu">::</span><span class="fu"><a href="https://devtools.r-lib.org/reference/test.html" class="external-link">test</a></span><span class="op">(</span><span class="op">)</span></span></code></pre></div>
 <p>To build documentation:</p>
-<div class="sourceCode" id="cb11"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb13"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu">devtools</span><span class="fu">::</span><span class="fu"><a href="https://devtools.r-lib.org/reference/document.html" class="external-link">document</a></span><span class="op">(</span><span class="op">)</span></span>
 <span><span class="fu">pkgdown</span><span class="fu">::</span><span class="fu"><a href="https://pkgdown.r-lib.org/reference/build_site.html" class="external-link">build_site</a></span><span class="op">(</span><span class="op">)</span></span></code></pre></div>
 </div>
@@ -259,6 +313,7 @@
 <p>MIT + file LICENSE</p>
 </div>
 </div>
+
   </main><aside class="col-md-3"><div class="links">
 <h2 data-toc-skip>Links</h2>
 <ul class="list-unstyled">
